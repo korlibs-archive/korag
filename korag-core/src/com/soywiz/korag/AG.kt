@@ -13,13 +13,24 @@ import com.soywiz.korio.util.Pool
 import java.io.Closeable
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
+import java.util.*
 
-open class AG(
-	var backWidth: Int,
-	var backHeight: Int,
-	var virtualWidth: Int = backWidth,
-	var virtualHeight: Int = backHeight
-) {
+val agFactory by lazy {
+	ServiceLoader.load(AGFactory::class.java).toList().filter(AGFactory::available).sortedBy(AGFactory::priority).firstOrNull()
+		?: invalidOp("Can't find AGFactory implementation")
+}
+
+abstract class AGFactory {
+	open val available: Boolean = true
+	open val priority: Int = 4000
+
+	abstract fun create(): AG
+}
+
+open class AG() {
+	open var backWidth: Int = 640
+	open var backHeight: Int = 480
+
 	open class Texture : Closeable {
 		var mipmaps = false
 
@@ -181,21 +192,15 @@ open class AG(
 		val oldRendering = renderingToTexture
 		val oldWidth = backWidth
 		val oldHeight = backHeight
-		val oldVirtualWidth = virtualWidth
-		val oldVirtualHeight = virtualHeight
 		renderingToTexture = true
 		backWidth = width
 		backHeight = height
-		virtualWidth = width
-		virtualHeight = height
 		try {
 			return renderToTextureInternal(width, height, callback)
 		} finally {
 			renderingToTexture = oldRendering
 			backWidth = oldWidth
 			backHeight = oldHeight
-			virtualWidth = oldVirtualWidth
-			virtualHeight = oldVirtualHeight
 		}
 	}
 

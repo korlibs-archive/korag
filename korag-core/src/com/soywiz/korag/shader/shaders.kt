@@ -232,7 +232,7 @@ fun FragmentShader(callback: Program.Builder.() -> Unit): FragmentShader {
 class VertexFormat(val attributes: List<Attribute>) {
 	constructor(vararg attributes: Attribute) : this(attributes.toList())
 
-	internal var totalSize = 0
+	var totalSize = 0; private set
 	val attributePositions = attributes.map {
 		val out = totalSize
 		totalSize += it.type.bytesSize

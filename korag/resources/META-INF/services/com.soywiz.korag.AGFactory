@@ -1,0 +1,2 @@
+com.soywiz.korag.webgl.AGFactoryWebgl # <target=js>
+com.soywiz.korag.awt.AGFactoryAwt # <target=jvm>
