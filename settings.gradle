@@ -1,0 +1,6 @@
+rootProject.name = 'korag-root'
+
+include(
+        'korag',
+        'korag-core',
+)

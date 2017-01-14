@@ -1,0 +1,8 @@
+apply from: "../include.gradle"
+
+apply plugin: 'kotlin'
+
+dependencies {
+	compile project(":korag-core")
+	//compile "io.vertx:vertx-core:$vertxVersion"
+}
