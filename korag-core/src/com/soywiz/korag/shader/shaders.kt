@@ -1,3 +1,5 @@
+@file:Suppress("unused")
+
 package com.soywiz.korag.shader
 
 import com.soywiz.korio.error.invalidOp
@@ -128,7 +130,7 @@ class Program(val vertex: VertexShader, val fragment: FragmentShader) : Closeabl
 		operator fun Operand.plus(that: Operand) = Binop(this, "+", that)
 		operator fun Operand.times(that: Operand) = Binop(this, "*", that)
 		operator fun Operand.div(that: Operand) = Binop(this, "/", that)
-		operator fun Operand.mod(that: Operand) = Binop(this, "%", that)
+		operator fun Operand.rem(that: Operand) = Binop(this, "%", that)
 	}
 
 	open class Visitor {

@@ -10,4 +10,5 @@ class AGFactoryAndroid : AGFactory() {
 }
 
 class AGAndroid : AG() {
+	override val nativeComponent: Any = Object()
 }

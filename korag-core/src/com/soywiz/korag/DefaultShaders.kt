@@ -16,7 +16,7 @@ object DefaultShaders {
 
 	val textureUnit = AG.TextureUnit()
 
-	val format = VertexFormat(a_Pos, a_Tex, a_Col)
+	val FORMAT_DEFAULT = VertexFormat(a_Pos, a_Tex, a_Col)
 
 	val VERTEX_DEFAULT = VertexShader {
 		SET(v_Tex, a_Tex)
@@ -32,6 +32,10 @@ object DefaultShaders {
 		SET(out, texture2D(u_Tex, v_Tex["xy"])["rgba"] * v_Col)
 	}
 
+	val FRAGMENT_SOLID_COLOR = FragmentShader {
+		out set v_Col
+	}
+
 	val PROGRAM_TINTED_TEXTURE = Program(
 		vertex = VERTEX_DEFAULT,
 		fragment = FRAGMENT_DEFAULT
@@ -39,8 +43,17 @@ object DefaultShaders {
 
 	val PROGRAM_SOLID_COLOR = Program(
 		vertex = VERTEX_DEFAULT,
+		fragment = FRAGMENT_SOLID_COLOR
+	)
+
+	val FORMAT_DEBUG = VertexFormat(a_Pos)
+
+	val PROGRAM_DEBUG = Program(
+		vertex = VertexShader {
+			SET(out, vec4(a_Pos, 0f.lit, 1f.lit))
+		},
 		fragment = FragmentShader {
-			out set v_Col
+			out set vec4(1f.lit, 0f.lit, 0f.lit, 1f.lit)
 		}
 	)
 

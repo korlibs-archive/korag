@@ -27,9 +27,12 @@ abstract class AGFactory {
 	abstract fun create(): AG
 }
 
-open class AG() {
+abstract class AG() {
+	abstract val nativeComponent: Any
 	open var backWidth: Int = 640
 	open var backHeight: Int = 480
+
+	var onRender: (AG) -> Unit = {}
 
 	open class Texture : Closeable {
 		var mipmaps = false
@@ -145,6 +148,15 @@ open class AG() {
 	open fun createBuffer(kind: Buffer.Kind) = Buffer(kind)
 	fun createIndexBuffer() = createBuffer(Buffer.Kind.INDEX)
 	fun createVertexBuffer() = createBuffer(Buffer.Kind.VERTEX)
+
+	fun createIndexBuffer(data: ShortArray, offset: Int = 0, length: Int = data.size - offset) = createIndexBuffer().apply {
+		upload(data, offset, length)
+	}
+
+	fun createVertexBuffer(data: FloatArray, offset: Int = 0, length: Int = data.size - offset) = createVertexBuffer().apply {
+		upload(data, offset, length)
+	}
+
 	open fun draw(vertices: Buffer, indices: Buffer, program: Program, type: DrawType, vertexFormat: VertexFormat, vertexCount: Int, offset: Int = 0, blending: BlendMode = BlendMode.OVERLAY, uniforms: Map<Uniform, Any> = mapOf()) {
 		//VertexFormat()
 		//	.add("hello", VertexFormat.Element.Type.Byte4)
@@ -180,13 +192,11 @@ open class AG() {
 
 	protected open fun flipInternal() = Unit
 
-	open fun clear() = Unit
+	open fun clear(color: Int = RGBA(0, 0, 0, 0xFF), depth: Float = 0f, stencil: Int = 0, clearColor: Boolean = true, clearDepth: Boolean = true, clearStencil: Boolean = true) = Unit
 
 	class RenderTexture(val tex: Texture, val width: Int, val height: Int)
 
 	var renderingToTexture = false
-
-	var clearColor = RGBA(0, 0, 0, 0xFF)
 
 	fun renderToTexture(width: Int, height: Int, callback: () -> Unit): RenderTexture {
 		val oldRendering = renderingToTexture

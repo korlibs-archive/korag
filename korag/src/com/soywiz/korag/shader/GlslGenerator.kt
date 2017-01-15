@@ -2,7 +2,7 @@ package com.soywiz.korag.shader
 
 import com.soywiz.korio.error.invalidOp
 
-class GlslGenerator(val kind: ShaderType, val gles: Boolean = false) : Program.Visitor() {
+class GlslGenerator(val kind: ShaderType, @Suppress("unused") val gles: Boolean = false) : Program.Visitor() {
 	private val temps = hashSetOf<Temp>()
 	private val attributes = hashSetOf<Attribute>()
 	private val varyings = hashSetOf<Varying>()
@@ -98,11 +98,11 @@ class GlslGenerator(val kind: ShaderType, val gles: Boolean = false) : Program.V
 		programStr.append(")")
 	}
 
-	override fun visit(_IF: Program.Stm.If) {
+	override fun visit(stm: Program.Stm.If) {
 		programStr.append("if (")
-		visit(_IF.cond)
+		visit(stm.cond)
 		programStr.append(")")
-		visit(_IF.body)
+		visit(stm.body)
 	}
 
 	override fun visit(operand: Variable) {
