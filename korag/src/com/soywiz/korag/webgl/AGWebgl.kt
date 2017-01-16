@@ -14,11 +14,13 @@ import com.soywiz.korim.bitmap.Bitmap32
 import com.soywiz.korim.bitmap.Bitmap8
 import com.soywiz.korim.color.RGBA
 import com.soywiz.korio.error.invalidOp
+import com.soywiz.korio.util.OS
 import com.soywiz.korio.util.UByteArray
 import java.io.Closeable
 import java.nio.ByteBuffer
 
 class AGFactoryWebgl : AGFactory() {
+	override val available: Boolean = OS.isJs
 	override val priority: Int = 1500
 	override fun create(): AG = AGWebgl()
 }
@@ -249,7 +251,7 @@ class AGWebgl : AG() {
 
 		glm["activeTexture"](gl["TEXTURE0"])
 		for (att in vertexFormat.attributes) {
-			val loc = glm["getAttribLocation"](glProgram, att.name).toInt()
+			val loc = glm["getAttribLocation"](glProgram.program, att.name).toInt()
 			if (loc >= 0) {
 				glm["disableVertexAttribArray"](loc)
 			}
