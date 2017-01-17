@@ -57,5 +57,14 @@ object DefaultShaders {
 		}
 	)
 
+	val PROGRAM_DEBUG_WITH_PROJ = Program(
+		vertex = VertexShader {
+			SET(out, u_ProjMat * vec4(a_Pos, 0f.lit, 1f.lit))
+		},
+		fragment = FragmentShader {
+			out set vec4(1f.lit, 0f.lit, 0f.lit, 1f.lit)
+		}
+	)
+
 	val PROGRAM_DEFAULT by lazy { PROGRAM_TINTED_TEXTURE }
 }

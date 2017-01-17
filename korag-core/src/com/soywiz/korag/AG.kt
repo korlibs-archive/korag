@@ -84,56 +84,61 @@ abstract class AG() {
 	open class Buffer(val kind: Kind) : Closeable {
 		enum class Kind { INDEX, VERTEX }
 
-		open fun upload(data: ByteBuffer, offset: Int = 0, length: Int = data.limit()): Buffer {
+		var dirty = false
+		protected var mem: FastMemory = FastMemory.alloc(0)
+
+		open fun afterSetMem() {
+		}
+
+		fun upload(data: ByteBuffer, offset: Int = 0, length: Int = data.limit()): Buffer {
+			// @TODO: Optimize this
+			mem = FastMemory.alloc(length)
+			for (n in 0 until length) {
+				mem.setInt8(n, data.get(offset + n).toInt())
+			}
+			dirty = true
+			afterSetMem()
 			return this
 		}
 
 		fun upload(data: ByteArray, offset: Int = 0, length: Int = data.size): Buffer {
-			val buffer = ByteBuffer.allocateDirect(length).order(ByteOrder.nativeOrder())
-			//buffer.clear()
-			buffer.put(data, offset, length)
-			//buffer.flip()
-			upload(buffer, offset, length * 1)
+			mem = FastMemory.alloc(length)
+			mem.setArrayInt8(0, data, offset, length)
+			dirty = true
+			afterSetMem()
 			return this
 		}
 
 		fun upload(data: FloatArray, offset: Int = 0, length: Int = data.size): Buffer {
-			val buffer = ByteBuffer.allocateDirect(length * 4).order(ByteOrder.nativeOrder())
-			val typedBuffer = buffer.asFloatBuffer()
-			typedBuffer.clear()
-			typedBuffer.put(data, offset, length)
-			buffer.flip()
-			buffer.limit(typedBuffer.limit() * 4)
-			upload(buffer, offset, length * 4)
+			mem = FastMemory.alloc(length * 4)
+			mem.setArrayFloat32(0, data, offset, length)
+			dirty = true
+			afterSetMem()
 			return this
 		}
 
 		fun upload(data: IntArray, offset: Int = 0, length: Int = data.size): Buffer {
-			val buffer = ByteBuffer.allocateDirect(length * 4).order(ByteOrder.nativeOrder())
-			val typedBuffer = buffer.asIntBuffer()
-			//typedBuffer.clear()
-			typedBuffer.put(data, offset, length)
-			//buffer.flip()
-			//buffer.limit(typedBuffer.limit() * 4)
-			upload(buffer, offset, length * 4)
+			mem = FastMemory.alloc(length * 4)
+			mem.setArrayInt32(0, data, offset, length)
+			dirty = true
+			afterSetMem()
 			return this
 		}
 
 		fun upload(data: ShortArray, offset: Int = 0, length: Int = data.size): Buffer {
-			val buffer = ByteBuffer.allocateDirect(length * 2).order(ByteOrder.nativeOrder())
-			val typedBuffer = buffer.asShortBuffer()
-			//typedBuffer.clear()
-			typedBuffer.put(data, offset, length)
-			//buffer.flip()
-			//buffer.limit(typedBuffer.limit() * 2)
-			upload(buffer, offset, length * 2)
+			mem = FastMemory.alloc(length * 2)
+			mem.setArrayInt16(0, data, offset, length)
+			dirty = true
+			afterSetMem()
 			return this
+
 		}
 
-		open fun upload(data: FastMemory, offset: Int = 0, length: Int = data.length): Buffer {
-			val buffer = ByteBuffer.allocateDirect(length).order(ByteOrder.nativeOrder())
-			for (n in 0 until length) buffer.put(n, data.getAlignedInt8(offset + n).toByte())
-			upload(buffer, 0, length)
+		fun upload(data: FastMemory, offset: Int = 0, length: Int = data.length): Buffer {
+			mem = FastMemory.alloc(length)
+			FastMemory.copy(data, offset, mem, 0, length)
+			dirty = true
+			afterSetMem()
 			return this
 		}
 

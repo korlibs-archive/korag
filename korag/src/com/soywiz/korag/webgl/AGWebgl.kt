@@ -152,21 +152,9 @@ class AGWebgl : AG() {
 			glm["bindBuffer"](this.target, this.buffer)
 		}
 
-		fun uploadInternal(data: ByteArray, offset: Int, length: Int): Buffer {
-			glm["bufferData"](this.target, data, gl["STATIC_DRAW"])
-			return this
-		}
-
-		override fun upload(data: ByteBuffer, offset: Int, length: Int): Buffer {
+		override fun afterSetMem() {
 			bind()
-			uploadInternal(data.array(), offset, length)
-			return this
-		}
-
-		override fun upload(data: FastMemory, offset: Int, length: Int): Buffer {
-			bind()
-			glm["bufferData"](this.target, data.asJsDynamic()["buffer"], gl["STATIC_DRAW"])
-			return this
+			glm["bufferData"](this.target, mem.asJsDynamic()["buffer"], gl["STATIC_DRAW"])
 		}
 
 		override fun close() {
