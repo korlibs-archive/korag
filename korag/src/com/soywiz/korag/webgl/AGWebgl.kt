@@ -32,6 +32,10 @@ class AGWebgl : AG() {
 	val glm = gl.methods
 	override val nativeComponent: Any = canvas
 
+	override fun repaint() {
+		onRender(this)
+	}
+
 	override fun clear(color: Int, depth: Float, stencil: Int, clearColor: Boolean, clearDepth: Boolean, clearStencil: Boolean) {
 		glm["clearColor"](RGBA.getRf(color), RGBA.getGf(color), RGBA.getBf(color), RGBA.getAf(color))
 		glm["clearDepth"](depth)
@@ -154,7 +158,11 @@ class AGWebgl : AG() {
 
 		override fun afterSetMem() {
 			bind()
-			glm["bufferData"](this.target, mem.asJsDynamic()["buffer"], gl["STATIC_DRAW"])
+			val buffer = mem.asJsDynamic()["buffer"]
+			val typedArray = jsNew("Int8Array", buffer, 0, mem.length)
+			//console.methods["log"](target)
+			//console.methods["log"](typedArray)
+			glm["bufferData"](this.target, typedArray, gl["STATIC_DRAW"])
 		}
 
 		override fun close() {

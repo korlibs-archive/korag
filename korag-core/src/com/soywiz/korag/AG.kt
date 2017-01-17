@@ -27,12 +27,15 @@ abstract class AGFactory {
 	abstract fun create(): AG
 }
 
-abstract class AG() {
+abstract class AG {
 	abstract val nativeComponent: Any
 	open var backWidth: Int = 640
 	open var backHeight: Int = 480
 
 	var onRender: (AG) -> Unit = {}
+
+	open fun repaint() {
+	}
 
 	open class Texture : Closeable {
 		var mipmaps = false
