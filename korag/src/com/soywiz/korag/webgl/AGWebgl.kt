@@ -36,6 +36,10 @@ class AGWebgl : AG() {
 		onRender(this)
 	}
 
+	override fun resized() {
+		glm["viewport"](0, 0, canvas["width"], canvas["height"])
+	}
+
 	override fun clear(color: Int, depth: Float, stencil: Int, clearColor: Boolean, clearDepth: Boolean, clearStencil: Boolean) {
 		glm["clearColor"](RGBA.getRf(color), RGBA.getGf(color), RGBA.getBf(color), RGBA.getAf(color))
 		glm["clearDepth"](depth)

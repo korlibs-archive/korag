@@ -37,6 +37,9 @@ abstract class AG {
 	open fun repaint() {
 	}
 
+	open fun resized() {
+	}
+
 	open class Texture : Closeable {
 		var mipmaps = false
 
