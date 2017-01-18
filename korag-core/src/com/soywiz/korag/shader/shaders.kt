@@ -231,7 +231,7 @@ fun FragmentShader(callback: Program.Builder.() -> Unit): FragmentShader {
 	return FragmentShader(Program.Stm.Stms(builder.outputStms))
 }
 
-class VertexFormat(val attributes: List<Attribute>) {
+class VertexLayout(val attributes: List<Attribute>) {
 	constructor(vararg attributes: Attribute) : this(attributes.toList())
 
 	var totalSize = 0; private set
@@ -241,3 +241,6 @@ class VertexFormat(val attributes: List<Attribute>) {
 		out
 	}
 }
+
+@Deprecated("Use VertexLayout", ReplaceWith("VertexLayout"))
+typealias VertexFormat = VertexLayout

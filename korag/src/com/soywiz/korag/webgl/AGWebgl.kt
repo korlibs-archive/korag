@@ -1,6 +1,5 @@
 package com.soywiz.korag.webgl
 
-import com.jtransc.FastMemory
 import com.jtransc.JTranscArrays
 import com.jtransc.annotation.JTranscMethodBody
 import com.jtransc.io.JTranscConsole
@@ -9,7 +8,11 @@ import com.soywiz.korag.AG
 import com.soywiz.korag.AGFactory
 import com.soywiz.korag.BlendMode
 import com.soywiz.korag.geom.Matrix4
-import com.soywiz.korag.shader.*
+import com.soywiz.korag.shader.Program
+import com.soywiz.korag.shader.Uniform
+import com.soywiz.korag.shader.VarType
+import com.soywiz.korag.shader.VertexLayout
+import com.soywiz.korag.shader.gl.toGlSlString
 import com.soywiz.korim.bitmap.Bitmap32
 import com.soywiz.korim.bitmap.Bitmap8
 import com.soywiz.korim.color.RGBA
@@ -193,20 +196,20 @@ class AGWebgl : AG() {
 		DrawType.TRIANGLES -> gl["TRIANGLES"].toInt()
 	}
 
-	override fun draw(vertices: Buffer, indices: Buffer, program: Program, type: DrawType, vertexFormat: VertexFormat, vertexCount: Int, offset: Int, blending: BlendMode, uniforms: Map<Uniform, Any>) {
+	override fun draw(vertices: Buffer, indices: Buffer, program: Program, type: DrawType, vertexLayout: VertexLayout, vertexCount: Int, offset: Int, blending: BlendMode, uniforms: Map<Uniform, Any>) {
 		checkBuffers(vertices, indices)
 		val glProgram = getProgram(program)
 		(vertices as WebglBuffer).bind()
 		(indices as WebglBuffer).bind()
 		glProgram.bind()
 
-		for (n in vertexFormat.attributePositions.indices) {
-			val att = vertexFormat.attributes[n]
-			val off = vertexFormat.attributePositions[n]
+		for (n in vertexLayout.attributePositions.indices) {
+			val att = vertexLayout.attributes[n]
+			val off = vertexLayout.attributePositions[n]
 			val loc = glm["getAttribLocation"](glProgram.program, att.name).toInt()
 			val glElementType = att.type.webglElementType
 			val elementCount = att.type.elementCount
-			val totalSize = vertexFormat.totalSize
+			val totalSize = vertexLayout.totalSize
 			if (loc >= 0) {
 				glm["enableVertexAttribArray"](loc)
 				glm["vertexAttribPointer"](loc, elementCount, glElementType, att.normalized, totalSize, off)
@@ -250,7 +253,7 @@ class AGWebgl : AG() {
 		glm["drawElements"](type.glDrawMode, vertexCount, gl["UNSIGNED_SHORT"], offset)
 
 		glm["activeTexture"](gl["TEXTURE0"])
-		for (att in vertexFormat.attributes) {
+		for (att in vertexLayout.attributes) {
 			val loc = glm["getAttribLocation"](glProgram.program, att.name).toInt()
 			if (loc >= 0) {
 				glm["disableVertexAttribArray"](loc)

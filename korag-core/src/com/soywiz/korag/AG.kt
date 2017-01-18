@@ -4,6 +4,7 @@ import com.jtransc.FastMemory
 import com.soywiz.korag.shader.Program
 import com.soywiz.korag.shader.Uniform
 import com.soywiz.korag.shader.VertexFormat
+import com.soywiz.korag.shader.VertexLayout
 import com.soywiz.korim.bitmap.Bitmap
 import com.soywiz.korim.bitmap.Bitmap32
 import com.soywiz.korim.bitmap.Bitmap8
@@ -168,14 +169,14 @@ abstract class AG {
 		upload(data, offset, length)
 	}
 
-	open fun draw(vertices: Buffer, indices: Buffer, program: Program, type: DrawType, vertexFormat: VertexFormat, vertexCount: Int, offset: Int = 0, blending: BlendMode = BlendMode.OVERLAY, uniforms: Map<Uniform, Any> = mapOf()) {
+	open fun draw(vertices: Buffer, indices: Buffer, program: Program, type: DrawType, vertexLayout: VertexLayout, vertexCount: Int, offset: Int = 0, blending: BlendMode = BlendMode.OVERLAY, uniforms: Map<Uniform, Any> = mapOf()) {
 		//VertexFormat()
 		//	.add("hello", VertexFormat.Element.Type.Byte4)
 	}
 
-	fun draw(vertices: Buffer, program: Program, type: DrawType, vertexFormat: VertexFormat, vertexCount: Int, offset: Int = 0, blending: BlendMode = BlendMode.OVERLAY, uniforms: Map<Uniform, Any> = mapOf()) {
-		createIndexBuffer((0 until vertexCount).map { it.toShort() }.toShortArray()).use { indices ->
-			draw(vertices, indices, program, type, vertexFormat, vertexCount, offset, blending, uniforms)
+	fun draw(vertices: Buffer, program: Program, type: DrawType, vertexLayout: VertexLayout, vertexCount: Int, offset: Int = 0, blending: BlendMode = BlendMode.OVERLAY, uniforms: Map<Uniform, Any> = mapOf()) {
+		createIndexBuffer((0 until vertexCount).map(Int::toShort).toShortArray()).use { indices ->
+			draw(vertices, indices, program, type, vertexLayout, vertexCount, offset, blending, uniforms)
 		}
 		//VertexFormat()
 		//	.add("hello", VertexFormat.Element.Type.Byte4)
@@ -217,7 +218,7 @@ abstract class AG {
 
 	var renderingToTexture = false
 
-	fun renderToTexture(width: Int, height: Int, callback: () -> Unit): RenderTexture {
+	inline fun renderToTexture(width: Int, height: Int, callback: () -> Unit): RenderTexture {
 		val oldRendering = renderingToTexture
 		val oldWidth = backWidth
 		val oldHeight = backHeight
@@ -233,7 +234,7 @@ abstract class AG {
 		}
 	}
 
-	protected fun renderToTextureInternal(width: Int, height: Int, callback: () -> Unit): RenderTexture {
+	inline fun renderToTextureInternal(width: Int, height: Int, callback: () -> Unit): RenderTexture {
 		val rb = renderBuffers.obtain()
 		frameRenderBuffers += rb
 		val oldRendering = renderingToTexture
@@ -250,7 +251,7 @@ abstract class AG {
 		return RenderTexture(rb.tex, width, height)
 	}
 
-	fun renderToBitmap(bmp: Bitmap32, callback: () -> Unit) {
+	inline fun renderToBitmap(bmp: Bitmap32, callback: () -> Unit) {
 		val rb = renderBuffers.obtain()
 		frameRenderBuffers += rb
 		val oldRendering = renderingToTexture

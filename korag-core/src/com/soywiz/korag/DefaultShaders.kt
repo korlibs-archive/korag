@@ -16,7 +16,10 @@ object DefaultShaders {
 
 	val textureUnit = AG.TextureUnit()
 
-	val FORMAT_DEFAULT = VertexFormat(a_Pos, a_Tex, a_Col)
+	@Deprecated("Use LAYOUT_DEFAULT", ReplaceWith("DefaultShaders.LAYOUT_DEFAULT"))
+	val FORMAT_DEFAULT = VertexLayout(a_Pos, a_Tex, a_Col)
+
+	val LAYOUT_DEFAULT = VertexLayout(a_Pos, a_Tex, a_Col)
 
 	val VERTEX_DEFAULT = VertexShader {
 		SET(v_Tex, a_Tex)
@@ -46,7 +49,9 @@ object DefaultShaders {
 		fragment = FRAGMENT_SOLID_COLOR
 	)
 
-	val FORMAT_DEBUG = VertexFormat(a_Pos)
+	@Deprecated("Use LAYOUT_DEBUG", ReplaceWith("DefaultShaders.LAYOUT_DEBUG"))
+	val FORMAT_DEBUG = VertexLayout(a_Pos)
+	val LAYOUT_DEBUG = VertexLayout(a_Pos)
 
 	val PROGRAM_DEBUG = Program(
 		vertex = VertexShader {
@@ -62,7 +67,7 @@ object DefaultShaders {
 			SET(out, u_ProjMat * vec4(a_Pos, 0f.lit, 1f.lit))
 		},
 		fragment = FragmentShader {
-			out set vec4(1f.lit, 0f.lit, 0f.lit, 1f.lit)
+			SET(out, vec4(1f.lit, 0f.lit, 0f.lit, 1f.lit))
 		}
 	)
 

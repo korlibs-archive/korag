@@ -1,5 +1,6 @@
-package com.soywiz.korag.shader
+package com.soywiz.korag.shader.gl
 
+import com.soywiz.korag.shader.*
 import com.soywiz.korio.error.invalidOp
 
 class GlslGenerator(val kind: ShaderType, @Suppress("unused") val gles: Boolean = false) : Program.Visitor() {
