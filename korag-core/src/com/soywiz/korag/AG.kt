@@ -173,6 +173,14 @@ abstract class AG {
 		//	.add("hello", VertexFormat.Element.Type.Byte4)
 	}
 
+	fun draw(vertices: Buffer, program: Program, type: DrawType, vertexFormat: VertexFormat, vertexCount: Int, offset: Int = 0, blending: BlendMode = BlendMode.OVERLAY, uniforms: Map<Uniform, Any> = mapOf()) {
+		createIndexBuffer((0 until vertexCount).map { it.toShort() }.toShortArray()).use { indices ->
+			draw(vertices, indices, program, type, vertexFormat, vertexCount, offset, blending, uniforms)
+		}
+		//VertexFormat()
+		//	.add("hello", VertexFormat.Element.Type.Byte4)
+	}
+
 	protected fun checkBuffers(vertices: AG.Buffer, indices: AG.Buffer) {
 		if (vertices.kind != AG.Buffer.Kind.VERTEX) invalidOp("Not a VertexBuffer")
 		if (indices.kind != AG.Buffer.Kind.INDEX) invalidOp("Not a IndexBuffer")
