@@ -8,6 +8,7 @@ import java.io.Closeable
 enum class VarType(val bytesSize: Int, val elementCount: Int) {
 	TextureUnit(4, elementCount = 1),
 	Bool1(1, elementCount = 1),
+	Int1(4, elementCount = 1),
 	Float1(4, elementCount = 1),
 	Float2(8, elementCount = 2),
 	Float3(12, elementCount = 3),
@@ -42,6 +43,7 @@ class Program(val vertex: VertexShader, val fragment: FragmentShader) : Closeabl
 	}
 
 	class Binop(val left: Operand, val op: String, val right: Operand) : Operand(left.type)
+	class IntLiteral(val value: Int) : Operand(VarType.Int1)
 	class FloatLiteral(val value: Float) : Operand(VarType.Float1)
 	class BoolLiteral(val value: Boolean) : Operand(VarType.Bool1)
 
@@ -55,17 +57,41 @@ class Program(val vertex: VertexShader, val fragment: FragmentShader) : Closeabl
 	sealed class Stm {
 		class Stms(val stms: List<Stm>) : Stm()
 		class Set(val to: Operand, val from: Operand) : Stm()
-		class If(val cond: Operand, val body: Stm) : Stm()
+		class If(val cond: Operand, val tbody: Stm, var fbody: Stm? = null) : Stm()
 	}
 
 	// http://mew.cx/glsl_quickref.pdf
 	class Builder(val type: ShaderType) {
 		val outputStms = arrayListOf<Stm>()
 
-		inline fun IF(cond: Operand, callback: Builder.() -> Unit) {
+		//inner class BuildIf(val stmIf: Stm.If) {
+		//	fun ELSEIF(cond: Operand, callback: Builder.() -> Unit): BuildIf {
+		//		//val body = Builder(type)
+		//		//body.callback()
+		//		//outputStms += Stm.If(cond, Stm.Stms(body.outputStms))
+		//		TODO()
+		//	}
+//
+		//	infix fun ELSE(callback: Builder.() -> Unit) {
+		//		//val body = Builder(type)
+		//		//body.callback()
+		//		//outputStms += Stm.If(cond, Stm.Stms(body.outputStms))
+		//		TODO()
+		//	}
+		//}
+
+		infix fun Stm.If.ELSE(callback: Builder.() -> Unit) {
 			val body = Builder(type)
 			body.callback()
-			outputStms += Stm.If(cond, Stm.Stms(body.outputStms))
+			this.fbody = Stm.Stms(body.outputStms)
+		}
+
+		inline fun IF(cond: Operand, callback: Builder.() -> Unit): Stm.If {
+			val body = Builder(type)
+			body.callback()
+			val stmIf = Stm.If(cond, Stm.Stms(body.outputStms))
+			outputStms += stmIf
+			return stmIf
 		}
 
 		fun SET(target: Operand, expr: Operand) {
@@ -119,6 +145,7 @@ class Program(val vertex: VertexShader, val fragment: FragmentShader) : Closeabl
 		fun smoothstep(a: Operand, b: Operand, c: Operand) = Func("smoothstep", listOf(a, b, c))
 		fun mix(a: Operand, b: Operand, step: Operand) = Func("mix", listOf(a, b, step))
 
+		val Int.lit: IntLiteral get() = IntLiteral(this)
 		val Float.lit: FloatLiteral get() = FloatLiteral(this)
 		val Boolean.lit: BoolLiteral get() = BoolLiteral(this)
 		fun lit(type: VarType, vararg ops: Operand): Operand = Vector(type, ops.toList())
@@ -146,7 +173,7 @@ class Program(val vertex: VertexShader, val fragment: FragmentShader) : Closeabl
 
 		open fun visit(stm: Stm.If) {
 			visit(stm.cond)
-			visit(stm.body)
+			visit(stm.tbody)
 		}
 
 		open fun visit(stm: Stm.Set) {
@@ -158,6 +185,7 @@ class Program(val vertex: VertexShader, val fragment: FragmentShader) : Closeabl
 			is Variable -> visit(operand)
 			is Binop -> visit(operand)
 			is BoolLiteral -> visit(operand)
+			is IntLiteral -> visit(operand)
 			is FloatLiteral -> visit(operand)
 			is Vector -> visit(operand)
 			is Swizzle -> visit(operand)
@@ -204,6 +232,9 @@ class Program(val vertex: VertexShader, val fragment: FragmentShader) : Closeabl
 
 		open fun visit(operand: Vector) {
 			for (op in operand.ops) visit(op)
+		}
+
+		open fun visit(operand: IntLiteral) {
 		}
 
 		open fun visit(operand: FloatLiteral) {

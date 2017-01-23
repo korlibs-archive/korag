@@ -3,7 +3,7 @@ package com.soywiz.korag.shader.gl
 import com.soywiz.korag.shader.*
 import com.soywiz.korio.error.invalidOp
 
-class GlslGenerator(val kind: ShaderType, @Suppress("unused") val gles: Boolean = false) : Program.Visitor() {
+class GlslGenerator(val kind: ShaderType, @Suppress("unused") val gles: Boolean = true) : Program.Visitor() {
 	private val temps = hashSetOf<Temp>()
 	private val attributes = hashSetOf<Attribute>()
 	private val varyings = hashSetOf<Varying>()
@@ -50,7 +50,13 @@ class GlslGenerator(val kind: ShaderType, @Suppress("unused") val gles: Boolean 
 			typeToString(it.type) + " " + it.name + ";"
 		}
 
-		return precissions.joinToString("\n") + "\n" + prefix.joinToString("\n") + "\n" + "void main() {\n" + tempsStr.joinToString("\n") + programStr.toString() + "}\n"
+		val preprefix = if (gles) {
+			precissions.joinToString("\n") + "\n"
+		} else {
+			""
+		}
+
+		return preprefix + prefix.joinToString("\n") + "\n" + "void main() {" + tempsStr.joinToString("\n") + programStr.toString() + "}"
 	}
 
 	override fun visit(stms: Program.Stm.Stms) {
@@ -63,7 +69,7 @@ class GlslGenerator(val kind: ShaderType, @Suppress("unused") val gles: Boolean 
 		visit(stm.to)
 		programStr.append(" = ")
 		visit(stm.from)
-		programStr.append(";\n")
+		programStr.append(";")
 	}
 
 	override fun visit(operand: Program.Vector) {
@@ -102,8 +108,12 @@ class GlslGenerator(val kind: ShaderType, @Suppress("unused") val gles: Boolean 
 	override fun visit(stm: Program.Stm.If) {
 		programStr.append("if (")
 		visit(stm.cond)
-		programStr.append(")")
-		visit(stm.body)
+		programStr.append(") ")
+		visit(stm.tbody)
+		if (stm.fbody != null) {
+			programStr.append(" else ")
+			visit(stm.fbody!!)
+		}
 	}
 
 	override fun visit(operand: Variable) {
@@ -140,6 +150,11 @@ class GlslGenerator(val kind: ShaderType, @Suppress("unused") val gles: Boolean 
 
 	override fun visit(output: Output) {
 		super.visit(output)
+	}
+
+	override fun visit(operand: Program.IntLiteral) {
+		programStr.append(operand.value)
+		super.visit(operand)
 	}
 
 	override fun visit(operand: Program.FloatLiteral) {
