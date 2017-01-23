@@ -3,7 +3,6 @@ package com.soywiz.korag
 import com.jtransc.FastMemory
 import com.soywiz.korag.shader.Program
 import com.soywiz.korag.shader.Uniform
-import com.soywiz.korag.shader.VertexFormat
 import com.soywiz.korag.shader.VertexLayout
 import com.soywiz.korim.bitmap.Bitmap
 import com.soywiz.korim.bitmap.Bitmap32

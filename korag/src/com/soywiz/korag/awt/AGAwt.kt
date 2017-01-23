@@ -3,9 +3,6 @@ package com.soywiz.korag.awt
 import com.jogamp.opengl.*
 import com.jogamp.opengl.awt.GLCanvas
 import com.jtransc.FastMemory
-import com.jtransc.js.asJsDynamic
-import com.jtransc.js.jsNew
-import com.jtransc.js.methods
 import com.soywiz.korag.AG
 import com.soywiz.korag.AGFactory
 import com.soywiz.korag.BlendMode
@@ -159,6 +156,7 @@ class AGAwt : AG() {
 	}
 
 	val VarType.glElementType: Int get() = when (this) {
+		VarType.Int1 -> GL2.GL_INT
 		VarType.Float1, VarType.Float2, VarType.Float3, VarType.Float4 -> GL2.GL_FLOAT
 		VarType.Mat4 -> GL2.GL_FLOAT
 		VarType.Bool1 -> GL2.GL_UNSIGNED_BYTE
@@ -270,9 +268,11 @@ class AGAwt : AG() {
 
 	inner class AwtTexture(val gl: GL2) : Texture() {
 		val texIds = IntArray(1)
+
 		init {
 			gl.glGenTextures(1, texIds, 0)
 		}
+
 		val tex = texIds[0]
 
 		override fun createMipmaps(): Boolean {
@@ -293,11 +293,13 @@ class AGAwt : AG() {
 		override fun uploadBuffer(data: ByteBuffer, width: Int, height: Int, kind: Kind) {
 			uploadBuffer(FastMemory.wrap(data), width, height, kind == Kind.RGBA)
 		}
+
 		override fun uploadBitmap32(bmp: Bitmap32) {
 			val mem = FastMemory.alloc(bmp.area * 4)
 			mem.setArrayInt32(0, bmp.data, 0, bmp.area)
 			uploadBuffer(mem, bmp.width, bmp.height, true)
 		}
+
 		override fun uploadBitmap8(bmp: Bitmap8) {
 			val mem = FastMemory.alloc(bmp.area)
 			mem.setArrayInt8(0, bmp.data, 0, bmp.area)

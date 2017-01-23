@@ -162,6 +162,7 @@ class AGAndroid : AG() {
 	}
 
 	val VarType.glElementType: Int get() = when (this) {
+		VarType.Int1 -> GL.GL_INT
 		VarType.Float1, VarType.Float2, VarType.Float3, VarType.Float4 -> GL.GL_FLOAT
 		VarType.Mat4 -> GL.GL_FLOAT
 		VarType.Bool1 -> GL.GL_UNSIGNED_BYTE

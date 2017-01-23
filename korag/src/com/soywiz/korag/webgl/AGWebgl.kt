@@ -185,6 +185,7 @@ class AGWebgl : AG() {
 	fun getProgram(program: Program): WebglProgram = programs.getOrPut(program) { WebglProgram(program) }
 
 	val VarType.webglElementType: Int get() = when (this) {
+		VarType.Int1 -> gl["INT"].toInt()
 		VarType.Float1, VarType.Float2, VarType.Float3, VarType.Float4 -> gl["FLOAT"].toInt()
 		VarType.Mat4 -> gl["FLOAT"].toInt()
 		VarType.Bool1 -> gl["UNSIGNED_BYTE"].toInt()
