@@ -63,11 +63,23 @@ open class LogAG : AG() {
 	override fun draw(vertices: Buffer, indices: Buffer, program: Program, type: DrawType, vertexLayout: VertexLayout, vertexCount: Int, offset: Int, blending: BlendMode, uniforms: Map<Uniform, Any>) {
 		try {
 			log("draw(vertices=$vertices, indices=$indices, program=$program, type=$type, vertexLayout=$vertexLayout, vertexCount=$vertexCount, offset=$offset, blending=$blending, uniforms=$uniforms)")
+
+			val missingUniforms = program.uniforms - uniforms.keys
+			val extraUniforms = uniforms.keys - program.uniforms
+			val missingAttributes = vertexLayout.attributes.toSet() - program.attributes
+			val extraAttributes = program.attributes - vertexLayout.attributes.toSet()
+
+			if (missingUniforms.isNotEmpty()) log("::draw.ERROR.Missing:$missingUniforms")
+			if (extraUniforms.isNotEmpty()) log("::draw.ERROR.Unexpected:$extraUniforms")
+
+			if (missingAttributes.isNotEmpty()) log("::draw.ERROR.Missing:$missingAttributes")
+			if (extraAttributes.isNotEmpty()) log("::draw.ERROR.Unexpected:$extraAttributes")
+
 			val vertexMem = (vertices as LogBuffer).logmem
 			val indexMem = (indices as LogBuffer).logmem
 			val indices = (offset until offset + vertexCount).map { indexMem.getAlignedInt16(it) }
 			log("::draw.indices=$indices")
-			for (index in indices.sorted()) {
+			for (index in indices.sorted().distinct()) {
 				val os = index * vertexLayout.totalSize
 				val attributes = arrayListOf<String>()
 				for ((attribute, pos) in vertexLayout.attributes.zip(vertexLayout.attributePositions)) {

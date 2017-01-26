@@ -32,17 +32,30 @@ open class Variable(val name: String, type: VarType) : Operand(type) {
 	var data: Any? = null
 }
 
-open class Attribute(name: String, type: VarType, val normalized: Boolean) : Variable(name, type)
-open class Varying(name: String, type: VarType) : Variable(name, type)
-open class Uniform(name: String, type: VarType) : Variable(name, type)
-open class Temp(id: Int, type: VarType) : Variable("temp$id", type)
-object Output : Variable("out", VarType.Float4)
+open class Attribute(name: String, type: VarType, val normalized: Boolean) : Variable(name, type) {
+	override fun toString(): String = "Attribute($name)"
+}
+open class Varying(name: String, type: VarType) : Variable(name, type) {
+	override fun toString(): String = "Varying($name)"
+}
+open class Uniform(name: String, type: VarType) : Variable(name, type) {
+	override fun toString(): String = "Uniform($name)"
+}
+open class Temp(id: Int, type: VarType) : Variable("temp$id", type) {
+	override fun toString(): String = "Temp($name)"
+}
+object Output : Variable("out", VarType.Float4) {
+	override fun toString(): String = "Output"
+}
 
 class Program(val vertex: VertexShader, val fragment: FragmentShader, val name: String = "program") : Closeable {
+	val uniforms by lazy { vertex.uniforms + fragment.uniforms }
+	val attributes by lazy { vertex.attributes + fragment.attributes }
+
 	override fun close() {
 	}
 
-	override fun toString(): String = "Program[$name]"
+	override fun toString(): String = "Program(name=$name, attributes=${attributes.map { it.name }}, uniforms=${uniforms.map { it.name }})"
 
 	class Binop(val left: Operand, val op: String, val right: Operand) : Operand(left.type)
 	class IntLiteral(val value: Int) : Operand(VarType.Int1)
@@ -247,7 +260,23 @@ class Program(val vertex: VertexShader, val fragment: FragmentShader, val name: 
 	}
 }
 
-open class Shader(val stm: Program.Stm)
+open class Shader(val stm: Program.Stm) {
+	val uniforms by lazy {
+		val out = LinkedHashSet<Uniform>()
+		object : Program.Visitor() {
+			override fun visit(uniform: Uniform) = run { out += uniform }
+		}.visit(stm)
+		out.toSet()
+	}
+
+	val attributes by lazy {
+		val out = LinkedHashSet<Attribute>()
+		object : Program.Visitor() {
+			override fun visit(attribute: Attribute) = run { out += attribute }
+		}.visit(stm)
+		out.toSet()
+	}
+}
 
 open class VertexShader(stm: Program.Stm) : Shader(stm)
 open class FragmentShader(stm: Program.Stm) : Shader(stm)
