@@ -1,5 +1,9 @@
 # Korag - Kotlin cORoutines Accelerated Graphics
 
+![](https://raw.githubusercontent.com/soywiz/kor/master/logos/128/korag.png)
+
+[All KOR libraries](https://github.com/soywiz/kor)
+
 Depends on korio and korim.
 Used by korui.
 
