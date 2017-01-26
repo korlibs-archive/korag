@@ -159,6 +159,7 @@ class AGAndroid : AG() {
 
 	val DrawType.glDrawMode: Int get() = when (this) {
 		DrawType.TRIANGLES -> GL.GL_TRIANGLES
+		DrawType.TRIANGLE_STRIP -> GL.GL_TRIANGLE_STRIP
 	}
 
 	val VarType.glElementType: Int get() = when (this) {

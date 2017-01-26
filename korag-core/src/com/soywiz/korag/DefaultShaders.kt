@@ -27,26 +27,26 @@ object DefaultShaders {
 		SET(out, u_ProjMat * vec4(a_Pos, 0f.lit, 1f.lit))
 	}
 
-	val FRAGMENT_DEFAULT = FragmentShader {
-		//t_Temp1 set texture2D(u_Tex, v_Tex["xy"])
-		//t_Temp1["xyz"] set t_Temp1["xyz"] / t_Temp1["w"]
-		//out set (t_Temp1 * v_Col)
-		//out set (texture2D(u_Tex, v_Tex["xy"])["bgra"] * v_Col)
-		SET(out, texture2D(u_Tex, v_Tex["xy"])["rgba"] * v_Col)
-	}
-
 	val FRAGMENT_SOLID_COLOR = FragmentShader {
 		out set v_Col
 	}
 
 	val PROGRAM_TINTED_TEXTURE = Program(
 		vertex = VERTEX_DEFAULT,
-		fragment = FRAGMENT_DEFAULT
+		fragment = FragmentShader {
+			//t_Temp1 set texture2D(u_Tex, v_Tex["xy"])
+			//t_Temp1["xyz"] set t_Temp1["xyz"] / t_Temp1["w"]
+			//out set (t_Temp1 * v_Col)
+			//out set (texture2D(u_Tex, v_Tex["xy"])["bgra"] * v_Col)
+			SET(out, texture2D(u_Tex, v_Tex["xy"])["rgba"] * v_Col)
+		},
+		name = "PROGRAM_TINTED_TEXTURE"
 	)
 
 	val PROGRAM_SOLID_COLOR = Program(
 		vertex = VERTEX_DEFAULT,
-		fragment = FRAGMENT_SOLID_COLOR
+		fragment = FRAGMENT_SOLID_COLOR,
+		name = "PROGRAM_SOLID_COLOR"
 	)
 
 	@Deprecated("Use LAYOUT_DEBUG", ReplaceWith("DefaultShaders.LAYOUT_DEBUG"))
@@ -59,7 +59,8 @@ object DefaultShaders {
 		},
 		fragment = FragmentShader {
 			out set vec4(1f.lit, 0f.lit, 0f.lit, 1f.lit)
-		}
+		},
+		name = "PROGRAM_DEBUG"
 	)
 
 	val PROGRAM_DEBUG_WITH_PROJ = Program(
@@ -68,7 +69,8 @@ object DefaultShaders {
 		},
 		fragment = FragmentShader {
 			SET(out, vec4(1f.lit, 0f.lit, 0f.lit, 1f.lit))
-		}
+		},
+		name = "PROGRAM_DEBUG_WITH_PROJ"
 	)
 
 	val PROGRAM_DEFAULT by lazy { PROGRAM_TINTED_TEXTURE }

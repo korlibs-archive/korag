@@ -152,7 +152,9 @@ abstract class AG {
 		}
 	}
 
-	enum class DrawType { TRIANGLES }
+	enum class DrawType {
+		TRIANGLES, TRIANGLE_STRIP
+	}
 
 	open fun createTexture(): Texture = Texture()
 	fun createTexture(bmp: Bitmap, mipmaps: Boolean = false): Texture = createTexture().upload(bmp, mipmaps)
@@ -165,6 +167,10 @@ abstract class AG {
 	}
 
 	fun createVertexBuffer(data: FloatArray, offset: Int = 0, length: Int = data.size - offset) = createVertexBuffer().apply {
+		upload(data, offset, length)
+	}
+
+	fun createVertexBuffer(data: FastMemory, offset: Int = 0, length: Int = data.length - offset) = createVertexBuffer().apply {
 		upload(data, offset, length)
 	}
 

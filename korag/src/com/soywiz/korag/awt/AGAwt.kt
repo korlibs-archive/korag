@@ -153,6 +153,7 @@ class AGAwt : AG() {
 
 	val DrawType.glDrawMode: Int get() = when (this) {
 		DrawType.TRIANGLES -> GL2.GL_TRIANGLES
+		DrawType.TRIANGLE_STRIP -> GL2.GL_TRIANGLE_STRIP
 	}
 
 	val VarType.glElementType: Int get() = when (this) {

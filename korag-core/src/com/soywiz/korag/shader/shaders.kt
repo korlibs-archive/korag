@@ -38,9 +38,11 @@ open class Uniform(name: String, type: VarType) : Variable(name, type)
 open class Temp(id: Int, type: VarType) : Variable("temp$id", type)
 object Output : Variable("out", VarType.Float4)
 
-class Program(val vertex: VertexShader, val fragment: FragmentShader) : Closeable {
+class Program(val vertex: VertexShader, val fragment: FragmentShader, val name: String = "program") : Closeable {
 	override fun close() {
 	}
+
+	override fun toString(): String = "Program[$name]"
 
 	class Binop(val left: Operand, val op: String, val right: Operand) : Operand(left.type)
 	class IntLiteral(val value: Int) : Operand(VarType.Int1)
@@ -271,6 +273,8 @@ class VertexLayout(val attributes: List<Attribute>) {
 		totalSize += it.type.bytesSize
 		out
 	}
+
+	override fun toString(): String = "VertexLayout[${attributes.map { it.name }.joinToString(", ")}]"
 }
 
 @Deprecated("Use VertexLayout", ReplaceWith("VertexLayout"))

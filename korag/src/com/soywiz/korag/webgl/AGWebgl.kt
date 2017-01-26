@@ -195,6 +195,7 @@ class AGWebgl : AG() {
 
 	val DrawType.glDrawMode: Int get() = when (this) {
 		DrawType.TRIANGLES -> gl["TRIANGLES"].toInt()
+		DrawType.TRIANGLE_STRIP -> gl["TRIANGLE_STRIP"].toInt()
 	}
 
 	override fun draw(vertices: Buffer, indices: Buffer, program: Program, type: DrawType, vertexLayout: VertexLayout, vertexCount: Int, offset: Int, blending: BlendMode, uniforms: Map<Uniform, Any>) {
