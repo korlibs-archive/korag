@@ -4,5 +4,5 @@ apply plugin: 'kotlin'
 
 dependencies {
 	compile project(":korag-core")
-	compile "com.soywiz:korim-android:$korimVersion"
+	compile "com.soywiz:korim-android:$korVersion"
 }

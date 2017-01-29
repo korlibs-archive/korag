@@ -18,6 +18,7 @@ import com.soywiz.korim.bitmap.Bitmap8
 import com.soywiz.korim.color.RGBA
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.util.OS
+import com.soywiz.korio.util.Once
 import com.soywiz.korio.util.UByteArray
 import java.io.Closeable
 import java.nio.ByteBuffer
@@ -35,11 +36,16 @@ class AGWebgl : AG() {
 	val glm = gl.methods
 	override val nativeComponent: Any = canvas
 
+	val onReadyOnce = Once()
+
 	override fun repaint() {
+		onReadyOnce { onReady(this@AGWebgl) }
 		onRender(this)
 	}
 
 	override fun resized() {
+		backWidth = canvas["width"].toInt()
+		backHeight = canvas["height"].toInt()
 		glm["viewport"](0, 0, canvas["width"], canvas["height"])
 	}
 

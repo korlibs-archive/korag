@@ -17,6 +17,7 @@ import com.soywiz.korim.bitmap.Bitmap8
 import com.soywiz.korim.color.RGBA
 import com.soywiz.korio.android.KorioAndroidContext
 import com.soywiz.korio.error.invalidOp
+import com.soywiz.korio.util.Once
 import java.io.Closeable
 import java.nio.ByteBuffer
 import javax.microedition.khronos.egl.EGLConfig
@@ -35,16 +36,22 @@ class AGAndroid : AG() {
 	val ag = this
 	val glv = GLSurfaceView(KorioAndroidContext)
 	override val nativeComponent: Any = glv
-	var initialized = false
-	//lateinit var gl: GLES20
 
 	init {
 		//glv.renderMode = GLSurfaceView.RENDERMODE_WHEN_DIRTY
 		glv.setEGLContextClientVersion(2)
 		glv.setRenderer(object : GLSurfaceView.Renderer {
+			val onReadyOnce = Once()
+
+			private fun initializeOnce() {
+				onReadyOnce {
+					onReady(ag)
+				}
+			}
+
 			override fun onDrawFrame(gl1: GL10) {
 				//println("Android.onDrawFrame")
-				initialized = true
+				initializeOnce()
 				//if (DEBUG_AGANDROID) println("Android.onDrawFrame... " + Thread.currentThread())
 				onRender(ag)
 				//gl = gl1 as GLES20
@@ -53,15 +60,17 @@ class AGAndroid : AG() {
 			override fun onSurfaceChanged(gl1: GL10, width: Int, height: Int) {
 				backWidth = width
 				backHeight = height
-				initialized = true
+
 				//gl = gl1 as GLES20
 				gl.glViewport(0, 0, backWidth, backHeight)
+
+				initializeOnce()
 				//resized()
 				onRender(ag)
 			}
 
 			override fun onSurfaceCreated(gl1: GL10, p1: EGLConfig) {
-				initialized = true
+				initializeOnce()
 				//gl = gl1 as GLES20
 				onRender(ag)
 			}
@@ -171,8 +180,8 @@ class AGAndroid : AG() {
 		VarType.TextureUnit -> GL.GL_INT
 	}
 
-	private val programs = hashMapOf<Program, AndroidProgram>()
-	fun getProgram(program: Program): AndroidProgram = programs.getOrPut(program) { AndroidProgram(program) }
+	private val programs = hashMapOf<String, AndroidProgram>()
+	fun getProgram(program: Program): AndroidProgram = programs.getOrPut(program.name) { AndroidProgram(program) }
 
 	class AndroidProgram(val program: Program) : Closeable {
 		val id = gl.glCreateProgram()
@@ -199,7 +208,7 @@ class AGAndroid : AG() {
 			val out = IntArray(1)
 			gl.glGetShaderiv(shaderId, GL.GL_COMPILE_STATUS, out, 0)
 			if (out[0] != GL.GL_TRUE) {
-				throw RuntimeException("Error Compiling Shader : " + gl.glGetShaderInfoLog(shaderId))
+				throw RuntimeException("Error Compiling Shader : " + gl.glGetShaderInfoLog(shaderId) + "\n" + str)
 			}
 			return shaderId
 		}

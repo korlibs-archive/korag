@@ -10,7 +10,10 @@ import com.soywiz.korim.bitmap.Bitmap32
 import com.soywiz.korim.bitmap.Bitmap8
 import java.nio.ByteBuffer
 
-open class LogAG : AG() {
+open class LogAG(
+	width: Int = 640,
+	height: Int = 480
+): AG() {
 	val log = arrayListOf<String>()
 	override val nativeComponent: Any = Object()
 
@@ -22,8 +25,8 @@ open class LogAG : AG() {
 	fun getLogAsString(): String = log.joinToString("\n")
 
 	override fun clear(color: Int, depth: Float, stencil: Int, clearColor: Boolean, clearDepth: Boolean, clearStencil: Boolean) = log("clear($color, $depth, $stencil, $clearColor, $clearDepth, $clearStencil)")
-	override var backWidth: Int = 0; set(value) = run { field = value; log("backWidth = $value") }
-	override var backHeight: Int = 0; set(value) = run { field = value; log("backHeight = $value") }
+	override var backWidth: Int = width; set(value) = run { field = value; log("backWidth = $value") }
+	override var backHeight: Int = height; set(value) = run { field = value; log("backHeight = $value") }
 
 	override fun repaint() = log("repaint()")
 

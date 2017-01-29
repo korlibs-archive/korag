@@ -16,6 +16,7 @@ import com.soywiz.korim.bitmap.Bitmap32
 import com.soywiz.korim.bitmap.Bitmap8
 import com.soywiz.korim.color.RGBA
 import com.soywiz.korio.error.invalidOp
+import com.soywiz.korio.util.Once
 import java.io.Closeable
 import java.nio.ByteBuffer
 
@@ -52,10 +53,15 @@ class AGAwt : AG() {
 
 	init {
 		glcanvas.addGLEventListener(object : GLEventListener {
-			override fun reshape(d: GLAutoDrawable, p1: Int, p2: Int, p3: Int, p4: Int) {
+			override fun reshape(d: GLAutoDrawable, x: Int, y: Int, width: Int, height: Int) {
 				setAutoDrawable(d)
+				backWidth = width
+				backHeight = height
+				resized()
 				//println("a")
 			}
+
+			var onReadyOnce = Once()
 
 			override fun display(d: GLAutoDrawable) {
 				setAutoDrawable(d)
@@ -65,8 +71,11 @@ class AGAwt : AG() {
 				//	callback(gl)
 				//}
 
+				onReadyOnce {
+					onReady(this@AGAwt)
+				}
 				onRender(this@AGAwt)
-				gl.glFlush()
+				checkErrors { gl.glFlush() }
 
 				//gl.glClearColor(1f, 1f, 0f, 1f)
 				//gl.glClear(GL.GL_COLOR_BUFFER_BIT)
@@ -97,33 +106,33 @@ class AGAwt : AG() {
 		for (n in vertexLayout.attributePositions.indices) {
 			val att = vertexLayout.attributes[n]
 			val off = vertexLayout.attributePositions[n]
-			val loc = gl.glGetAttribLocation(glProgram.id, att.name).toInt()
+			val loc = checkErrors { gl.glGetAttribLocation(glProgram.id, att.name).toInt() }
 			val glElementType = att.type.glElementType
 			val elementCount = att.type.elementCount
 			val totalSize = vertexLayout.totalSize
 			if (loc >= 0) {
-				gl.glEnableVertexAttribArray(loc)
-				gl.glVertexAttribPointer(loc, elementCount, glElementType, att.normalized, totalSize, off.toLong())
+				checkErrors { gl.glEnableVertexAttribArray(loc) }
+				checkErrors { gl.glVertexAttribPointer(loc, elementCount, glElementType, att.normalized, totalSize, off.toLong()) }
 			}
 		}
 		var textureUnit = 0
 		for ((uniform, value) in uniforms) {
-			val location = gl.glGetUniformLocation(glProgram.id, uniform.name) ?: continue
+			val location = checkErrors { gl.glGetUniformLocation(glProgram.id, uniform.name) }
 			when (uniform.type) {
 				VarType.TextureUnit -> {
 					val unit = value as TextureUnit
-					gl.glActiveTexture(GL2.GL_TEXTURE0 + textureUnit)
+					checkErrors { gl.glActiveTexture(GL2.GL_TEXTURE0 + textureUnit) }
 					val tex = (unit.texture as AwtTexture?)
-					tex?.bind()
+					tex?.bindEnsuring()
 					tex?.setFilter(unit.linear)
-					gl.glUniform1i(location, textureUnit)
+					checkErrors { gl.glUniform1i(location, textureUnit) }
 					textureUnit++
 				}
 				VarType.Mat4 -> {
-					gl.glUniformMatrix4fv(location, 1, false, (value as Matrix4).data, 0)
+					checkErrors { gl.glUniformMatrix4fv(location, 1, false, (value as Matrix4).data, 0) }
 				}
 				VarType.Float1 -> {
-					gl.glUniform1f(location, (value as Number).toFloat())
+					checkErrors { gl.glUniform1f(location, (value as Number).toFloat()) }
 				}
 				else -> invalidOp("Don't know how to set uniform ${uniform.type}")
 			}
@@ -131,22 +140,22 @@ class AGAwt : AG() {
 
 		when (blending) {
 			BlendMode.NONE -> {
-				gl.glDisable(GL2.GL_BLEND)
+				checkErrors { gl.glDisable(GL2.GL_BLEND) }
 			}
 			BlendMode.OVERLAY -> {
-				gl.glEnable(GL2.GL_BLEND)
-				gl.glBlendFuncSeparate(GL2.GL_SRC_ALPHA, GL2.GL_ONE_MINUS_SRC_ALPHA, GL2.GL_ONE, GL2.GL_ONE_MINUS_SRC_ALPHA)
+				checkErrors { gl.glEnable(GL2.GL_BLEND) }
+				checkErrors { gl.glBlendFuncSeparate(GL2.GL_SRC_ALPHA, GL2.GL_ONE_MINUS_SRC_ALPHA, GL2.GL_ONE, GL2.GL_ONE_MINUS_SRC_ALPHA) }
 			}
 			else -> Unit
 		}
 
-		gl.glDrawElements(type.glDrawMode, vertexCount, GL2.GL_UNSIGNED_SHORT, offset.toLong())
+		checkErrors { gl.glDrawElements(type.glDrawMode, vertexCount, GL2.GL_UNSIGNED_SHORT, offset.toLong()) }
 
-		gl.glActiveTexture(GL2.GL_TEXTURE0)
+		checkErrors { gl.glActiveTexture(GL2.GL_TEXTURE0) }
 		for (att in vertexLayout.attributes) {
-			val loc = gl.glGetAttribLocation(glProgram.id, att.name).toInt()
+			val loc = checkErrors { gl.glGetAttribLocation(glProgram.id, att.name).toInt() }
 			if (loc >= 0) {
-				gl.glDisableVertexAttribArray(loc)
+				checkErrors { gl.glDisableVertexAttribArray(loc) }
 			}
 		}
 	}
@@ -168,17 +177,17 @@ class AGAwt : AG() {
 	private val programs = hashMapOf<Program, AwtProgram>()
 	fun getProgram(program: Program): AwtProgram = programs.getOrPut(program) { AwtProgram(gl, program) }
 
-	class AwtProgram(val gl: GL2, val program: Program) : Closeable {
-		val id = gl.glCreateProgram()
+	inner class AwtProgram(val gl: GL2, val program: Program) : Closeable {
+		val id = checkErrors { gl.glCreateProgram() }
 		val fragmentShaderId = createShader(GL2.GL_FRAGMENT_SHADER, program.fragment.toGlSlString())
 		val vertexShaderId = createShader(GL2.GL_VERTEX_SHADER, program.vertex.toGlSlString())
 
 		init {
-			gl.glAttachShader(id, fragmentShaderId)
-			gl.glAttachShader(id, vertexShaderId)
-			gl.glLinkProgram(id)
+			checkErrors { gl.glAttachShader(id, fragmentShaderId) }
+			checkErrors { gl.glAttachShader(id, vertexShaderId) }
+			checkErrors { gl.glLinkProgram(id) }
 			val out = IntArray(1)
-			gl.glGetProgramiv(id, GL2.GL_LINK_STATUS, out, 0)
+			checkErrors { gl.glGetProgramiv(id, GL2.GL_LINK_STATUS, out, 0) }
 			//if (out[0] != GL2.GL_TRUE) {
 			//	val ba = ByteArray(1024)
 			//	val ia = intArrayOf(1024)
@@ -191,12 +200,12 @@ class AGAwt : AG() {
 		}
 
 		fun createShader(type: Int, str: String): Int {
-			val shaderId = gl.glCreateShader(type)
-			gl.glShaderSource(shaderId, 1, arrayOf(str), intArrayOf(str.length), 0)
-			gl.glCompileShader(shaderId)
+			val shaderId = checkErrors { gl.glCreateShader(type) }
+			checkErrors { gl.glShaderSource(shaderId, 1, arrayOf(str), intArrayOf(str.length), 0) }
+			checkErrors { gl.glCompileShader(shaderId) }
 
 			val out = IntArray(1)
-			gl.glGetShaderiv(shaderId, GL2.GL_COMPILE_STATUS, out, 0)
+			checkErrors { gl.glGetShaderiv(shaderId, GL2.GL_COMPILE_STATUS, out, 0) }
 			if (out[0] != GL2.GL_TRUE) {
 				// gl.glGetShaderInfoLog()
 				throw RuntimeException("Error Compiling Shader")
@@ -205,17 +214,17 @@ class AGAwt : AG() {
 		}
 
 		fun use() {
-			gl.glUseProgram(id)
+			checkErrors { gl.glUseProgram(id) }
 		}
 
 		fun unuse() {
-			gl.glUseProgram(0)
+			checkErrors { gl.glUseProgram(0) }
 		}
 
 		override fun close() {
-			gl.glDeleteShader(fragmentShaderId)
-			gl.glDeleteShader(vertexShaderId)
-			gl.glDeleteProgram(id)
+			checkErrors { gl.glDeleteShader(fragmentShaderId) }
+			checkErrors { gl.glDeleteShader(vertexShaderId) }
+			checkErrors { gl.glDeleteProgram(id) }
 		}
 	}
 
@@ -228,9 +237,11 @@ class AGAwt : AG() {
 		if (clearColor) bits = bits or GL.GL_COLOR_BUFFER_BIT
 		if (clearDepth) bits = bits or GL.GL_DEPTH_BUFFER_BIT
 		if (clearStencil) bits = bits or GL.GL_STENCIL_BUFFER_BIT
-		gl.glClearColor(r, g, b, a)
-		gl.glClear(bits)
+		checkErrors { gl.glClearColor(r, g, b, a) }
+		checkErrors { gl.glClear(bits) }
 	}
+
+	override fun createTexture(): Texture = AwtTexture(this.gl)
 
 	inner class AwtBuffer(kind: Buffer.Kind) : Buffer(kind) {
 		private var id = -1
@@ -241,25 +252,25 @@ class AGAwt : AG() {
 
 		override fun close() {
 			val deleteId = id
-			gl.glDeleteBuffers(1, intArrayOf(deleteId), 0)
+			checkErrors { gl.glDeleteBuffers(1, intArrayOf(deleteId), 0) }
 			id = -1
 		}
 
 		fun getGlId(gl: GL2): Int {
 			if (id < 0) {
 				val out = IntArray(1)
-				gl.glGenBuffers(1, out, 0)
+				checkErrors { gl.glGenBuffers(1, out, 0) }
 				id = out[0]
 			}
 			if (dirty) {
 				_bind(gl, id)
-				gl.glBufferData(glKind, mem.length.toLong(), mem.byteBufferOrNull, GL.GL_STATIC_DRAW)
+				checkErrors { gl.glBufferData(glKind, mem.length.toLong(), mem.byteBufferOrNull, GL.GL_STATIC_DRAW) }
 			}
 			return id
 		}
 
 		fun _bind(gl: GL2, id: Int) {
-			gl.glBindBuffer(glKind, id)
+			checkErrors { gl.glBindBuffer(glKind, id) }
 		}
 
 		fun bind(gl: GL2) {
@@ -271,24 +282,55 @@ class AGAwt : AG() {
 		val texIds = IntArray(1)
 
 		init {
-			gl.glGenTextures(1, texIds, 0)
+			checkErrors { gl.glGenTextures(1, texIds, 0) }
 		}
 
 		val tex = texIds[0]
 
-		override fun createMipmaps(): Boolean {
-			bind()
-			setFilter(true)
-			setWrapST()
-			//glm["generateMipmap"](gl["TEXTURE_2D"])
-			return false
+		init {
+			println("Created texture with id: $tex")
 		}
 
+		override fun createMipmaps(): Boolean = true
+
+		private var uploaded: Boolean = false
+		private var actualBuffer: ByteBuffer? = null
+		private var width: Int = 0
+		private var height: Int = 0
+		private var rgba: Boolean = false
+
 		fun uploadBuffer(data: FastMemory, width: Int, height: Int, rgba: Boolean) {
-			val Bpp = if (rgba) 4 else 1
-			val type = if (rgba) GL2.GL_RGBA else GL2.GL_LUMINANCE
+			this.uploaded = true
+			this.actualBuffer = clone(data.byteBufferOrNull)
+			this.width = width
+			this.height = height
+			this.rgba = rgba
+		}
+
+		fun bindEnsuring() {
 			bind()
-			gl.glTexImage2D(GL2.GL_TEXTURE_2D, 0, type, width, height, 0, type, GL2.GL_UNSIGNED_BYTE, data.byteBufferOrNull)
+			if (uploaded) {
+				uploaded = false
+				val Bpp = if (rgba) 4 else 1
+				val type = if (rgba) GL2.GL_RGBA else GL2.GL_LUMINANCE
+				checkErrors {
+					gl.glTexImage2D(GL2.GL_TEXTURE_2D, 0, type, width, height, 0, type, GL2.GL_UNSIGNED_BYTE, actualBuffer)
+				}
+				if (mipmaps) {
+					setFilter(true)
+					setWrapST()
+					gl.glGenerateMipmap(GL.GL_TEXTURE_2D)
+				}
+			}
+		}
+
+		fun clone(original: ByteBuffer): ByteBuffer {
+			val clone = ByteBuffer.allocate(original.capacity())
+			original.rewind()//copy from the beginning
+			clone.put(original)
+			original.rewind()
+			clone.flip()
+			return clone
 		}
 
 		override fun uploadBuffer(data: ByteBuffer, width: Int, height: Int, kind: Kind) {
@@ -307,10 +349,10 @@ class AGAwt : AG() {
 			uploadBuffer(mem, bmp.width, bmp.height, false)
 		}
 
-		fun bind(): Unit = run { gl.glBindTexture(GL2.GL_TEXTURE_2D, tex) }
-		fun unbind(): Unit = run { gl.glBindTexture(GL2.GL_TEXTURE_2D, 0) }
+		fun bind(): Unit = checkErrors { gl.glBindTexture(GL2.GL_TEXTURE_2D, tex) }
+		fun unbind(): Unit = checkErrors { gl.glBindTexture(GL2.GL_TEXTURE_2D, 0) }
 
-		override fun close(): Unit = run { gl.glDeleteTextures(1, texIds, 0) }
+		override fun close(): Unit = checkErrors { gl.glDeleteTextures(1, texIds, 0) }
 
 		fun setFilter(linear: Boolean) {
 			val minFilter = if (this.mipmaps) {
@@ -321,17 +363,27 @@ class AGAwt : AG() {
 			val magFilter = if (linear) GL2.GL_LINEAR else GL2.GL_NEAREST
 
 			setWrapST()
-			setMinMag(minFilter.toInt(), magFilter.toInt())
+			setMinMag(minFilter, magFilter)
 		}
 
 		private fun setWrapST() {
-			gl.glTexParameteri(GL2.GL_TEXTURE_2D, GL2.GL_TEXTURE_WRAP_S, GL2.GL_CLAMP_TO_EDGE)
-			gl.glTexParameteri(GL2.GL_TEXTURE_2D, GL2.GL_TEXTURE_WRAP_T, GL2.GL_CLAMP_TO_EDGE)
+			checkErrors { gl.glTexParameteri(GL2.GL_TEXTURE_2D, GL2.GL_TEXTURE_WRAP_S, GL2.GL_CLAMP_TO_EDGE) }
+			checkErrors { gl.glTexParameteri(GL2.GL_TEXTURE_2D, GL2.GL_TEXTURE_WRAP_T, GL2.GL_CLAMP_TO_EDGE) }
 		}
 
 		private fun setMinMag(min: Int, mag: Int) {
-			gl.glTexParameteri(GL2.GL_TEXTURE_2D, GL2.GL_TEXTURE_MIN_FILTER, min)
-			gl.glTexParameteri(GL2.GL_TEXTURE_2D, GL2.GL_TEXTURE_MAG_FILTER, mag)
+			checkErrors { gl.glTexParameteri(GL2.GL_TEXTURE_2D, GL2.GL_TEXTURE_MIN_FILTER, min) }
+			checkErrors { gl.glTexParameteri(GL2.GL_TEXTURE_2D, GL2.GL_TEXTURE_MAG_FILTER, mag) }
 		}
+	}
+
+	inline fun <T> checkErrors(callback: () -> T): T {
+		val res = callback()
+		val error = gl.glGetError()
+		if (error != GL.GL_NO_ERROR) {
+			println("OpenGL error: $error")
+			throw RuntimeException("OpenGL error: $error")
+		}
+		return res
 	}
 }

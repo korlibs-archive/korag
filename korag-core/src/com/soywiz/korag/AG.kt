@@ -8,6 +8,7 @@ import com.soywiz.korim.bitmap.Bitmap
 import com.soywiz.korim.bitmap.Bitmap32
 import com.soywiz.korim.bitmap.Bitmap8
 import com.soywiz.korim.color.RGBA
+import com.soywiz.korio.async.Signal
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.util.Pool
 import java.io.Closeable
@@ -32,7 +33,8 @@ abstract class AG {
 	open var backWidth: Int = 640
 	open var backHeight: Int = 480
 
-	var onRender: (AG) -> Unit = {}
+	val onReady = Signal<AG>()
+	val onRender = Signal<AG>()
 
 	open fun repaint() {
 	}
@@ -82,10 +84,10 @@ abstract class AG {
 		}
 	}
 
-	class TextureUnit {
-		var texture: AG.Texture? = null
+	data class TextureUnit(
+		var texture: AG.Texture? = null,
 		var linear: Boolean = true
-	}
+	)
 
 	open class Buffer(val kind: Kind) : Closeable {
 		enum class Kind { INDEX, VERTEX }

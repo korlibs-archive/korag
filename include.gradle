@@ -12,7 +12,7 @@ buildscript {
 }
 
 group 'com.soywiz'
-version "$koragVersion"
+version "$korVersion"
 
 apply plugin: 'java'
 apply plugin: 'kotlin'
@@ -42,8 +42,8 @@ sourceSets {
 }
 
 dependencies {
-    compile "com.soywiz:korio-core:$korioVersion"
-    compile "com.soywiz:korim-core:$korimVersion"
+    compile "com.soywiz:korio-core:$korVersion"
+    compile "com.soywiz:korim-core:$korVersion"
     compile "com.jtransc:jtransc-rt-core:$jtranscVersion"
     testCompile group: 'junit', name: 'junit', version: '4.11'
     compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"

@@ -98,4 +98,6 @@ class Matrix4(val data: FloatArray = floatArrayOf(
 
 		return this
 	}
+
+	override fun toString(): String = "Matrix4(${data.toList()})"
 }
