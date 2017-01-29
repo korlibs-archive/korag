@@ -281,14 +281,9 @@ class AGAwt : AG() {
 	inner class AwtTexture(val gl: GL2) : Texture() {
 		val texIds = IntArray(1)
 
-		init {
+		val tex by lazy {
 			checkErrors { gl.glGenTextures(1, texIds, 0) }
-		}
-
-		val tex = texIds[0]
-
-		init {
-			println("Created texture with id: $tex")
+			texIds[0]
 		}
 
 		override fun createMipmaps(): Boolean = true
