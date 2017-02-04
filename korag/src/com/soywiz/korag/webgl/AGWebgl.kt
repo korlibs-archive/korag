@@ -15,7 +15,9 @@ import com.soywiz.korag.shader.VertexLayout
 import com.soywiz.korag.shader.gl.toGlSlString
 import com.soywiz.korim.bitmap.Bitmap32
 import com.soywiz.korim.bitmap.Bitmap8
+import com.soywiz.korim.bitmap.NativeImage
 import com.soywiz.korim.color.RGBA
+import com.soywiz.korim.html.CanvasNativeImage
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.util.OS
 import com.soywiz.korio.util.Once
@@ -24,316 +26,330 @@ import java.io.Closeable
 import java.nio.ByteBuffer
 
 class AGFactoryWebgl : AGFactory() {
-	override val available: Boolean = OS.isJs
-	override val priority: Int = 1500
-	override fun create(): AG = AGWebgl()
+    override val available: Boolean = OS.isJs
+    override val priority: Int = 1500
+    override fun create(): AG = AGWebgl()
 }
 
 class AGWebgl : AG() {
-	val canvas = document.methods["createElement"]("canvas")!!
-	val glOpts = jsObject("premultipliedAlpha" to false)
-	val gl = canvas.methods["getContext"]("webgl", glOpts) ?: canvas.methods["getContext"]("experimental-webgl", glOpts)
-	val glm = gl.methods
-	override val nativeComponent: Any = canvas
+    val canvas = document.call("createElement", "canvas")!!
+    val glOpts = jsObject("premultipliedAlpha" to false)
+    val gl = canvas.call("getContext", "webgl", glOpts) ?: canvas.call("getContext", "experimental-webgl", glOpts)
+    override val nativeComponent: Any = canvas
 
-	val onReadyOnce = Once()
+    val onReadyOnce = Once()
 
-	override fun repaint() {
-		onReadyOnce { onReady(this@AGWebgl) }
-		onRender(this)
-	}
+    override fun repaint() {
+        onReadyOnce { onReady(this@AGWebgl) }
+        onRender(this)
+    }
 
-	override fun resized() {
-		backWidth = canvas["width"].toInt()
-		backHeight = canvas["height"].toInt()
-		glm["viewport"](0, 0, canvas["width"], canvas["height"])
-	}
+    override fun resized() {
+        backWidth = canvas["width"].toInt()
+        backHeight = canvas["height"].toInt()
+        gl.call("viewport", 0, 0, canvas["width"], canvas["height"])
+    }
 
-	override fun clear(color: Int, depth: Float, stencil: Int, clearColor: Boolean, clearDepth: Boolean, clearStencil: Boolean) {
-		glm["clearColor"](RGBA.getRf(color), RGBA.getGf(color), RGBA.getBf(color), RGBA.getAf(color))
-		glm["clearDepth"](depth)
-		glm["clearStencil"](stencil)
-		var flags = 0
-		if (clearColor) flags = flags or gl["COLOR_BUFFER_BIT"].toInt()
-		if (clearDepth) flags = flags or gl["DEPTH_BUFFER_BIT"].toInt()
-		if (clearStencil) flags = flags or gl["STENCIL_BUFFER_BIT"].toInt()
-		glm["clear"](flags)
-	}
+    override fun clear(color: Int, depth: Float, stencil: Int, clearColor: Boolean, clearDepth: Boolean, clearStencil: Boolean) {
+        gl.call("clearColor", RGBA.getRf(color), RGBA.getGf(color), RGBA.getBf(color), RGBA.getAf(color))
+        gl.call("clearDepth", depth)
+        gl.call("clearStencil", stencil)
+        var flags = 0
+        if (clearColor) flags = flags or gl["COLOR_BUFFER_BIT"].toInt()
+        if (clearDepth) flags = flags or gl["DEPTH_BUFFER_BIT"].toInt()
+        if (clearStencil) flags = flags or gl["STENCIL_BUFFER_BIT"].toInt()
+        gl.call("clear", flags)
+    }
 
-	inner class WebglProgram(val p: Program) : Closeable {
-		var program = glm["createProgram"]()
+    inner class WebglProgram(val p: Program) : Closeable {
+        var program = gl.call("createProgram")
 
-		fun createShader(type: JsDynamic?, source: String): JsDynamic? {
-			val shader = glm["createShader"](type)
-			glm["shaderSource"](shader, source)
-			glm["compileShader"](shader)
+        fun createShader(type: JsDynamic?, source: String): JsDynamic? {
+            val shader = gl.call("createShader", type)
+            gl.call("shaderSource", shader, source)
+            gl.call("compileShader", shader)
 
-			val success = glm["getShaderParameter"](shader, gl["COMPILE_STATUS"]).toBool()
-			if (!success) {
-				val error = glm["getShaderInfoLog"](shader).toJavaStringOrNull()
-				JTranscConsole.error(shader)
-				JTranscConsole.error(source)
-				JTranscConsole.error("Could not compile WebGL shader: " + error)
-				throw RuntimeException(error)
-			}
-			return shader
-		}
+            val success = gl.call("getShaderParameter", shader, gl["COMPILE_STATUS"]).toBool()
+            if (!success) {
+                val error = gl.call("getShaderInfoLog", shader).toJavaStringOrNull()
+                JTranscConsole.error(shader)
+                JTranscConsole.error(source)
+                JTranscConsole.error("Could not compile WebGL shader: " + error)
+                throw RuntimeException(error)
+            }
+            return shader
+        }
 
-		var vertex = createShader(gl["VERTEX_SHADER"], p.vertex.toGlSlString())
-		var fragment = createShader(gl["FRAGMENT_SHADER"], p.fragment.toGlSlString())
+        var vertex = createShader(gl["VERTEX_SHADER"], p.vertex.toGlSlString())
+        var fragment = createShader(gl["FRAGMENT_SHADER"], p.fragment.toGlSlString())
 
-		init {
-			glm["attachShader"](program, vertex)
-			glm["attachShader"](program, fragment)
+        init {
+            gl.call("attachShader", program, vertex)
+            gl.call("attachShader", program, fragment)
 
-			glm["linkProgram"](program)
+            gl.call("linkProgram", program)
 
-			if (!glm["getProgramParameter"](program, gl["LINK_STATUS"]).toBool()) {
-				val info = glm["getProgramInfoLog"](program)
-				JTranscConsole.error("Could not compile WebGL program: " + info)
-			}
-		}
+            if (!gl.call("getProgramParameter", program, gl["LINK_STATUS"]).toBool()) {
+                val info = gl.call("getProgramInfoLog", program)
+                JTranscConsole.error("Could not compile WebGL program: " + info)
+            }
+        }
 
 
-		fun bind() {
-			glm["useProgram"](this.program)
-		}
+        fun bind() {
+            gl.call("useProgram", this.program)
+        }
 
-		fun unbind() {
-			glm["userProgram"](null)
-		}
+        fun unbind() {
+            gl.call("userProgram", null)
+        }
 
-		override fun close() {
-			glm["deleteShader"](this.vertex)
-			glm["deleteShader"](this.fragment)
-			glm["deleteProgram"](this.program)
-		}
-	}
+        override fun close() {
+            gl.call("deleteShader", this.vertex)
+            gl.call("deleteShader", this.fragment)
+            gl.call("deleteProgram", this.program)
+        }
+    }
 
-	inner class WebglTexture() : Texture() {
-		val tex = glm["createTexture"]()
+    inner class WebglTexture() : Texture() {
+        val tex = gl.call("createTexture")
 
-		override fun createMipmaps(): Boolean {
-			bind()
-			setFilter(true)
-			setWrapST()
-			//glm["generateMipmap"](gl["TEXTURE_2D"])
-			return false
-		}
+        override fun createMipmaps(): Boolean {
+            bind()
+            setFilter(true)
+            setWrapST()
+            //gl["generateMipmap"](gl["TEXTURE_2D"])
+            return false
+        }
 
-		fun uploadBuffer(data: Any, width: Int, height: Int, rgba: Boolean) {
-			val Bpp = if (rgba) 4 else 1
-			val rdata = jsNew("Uint8Array", data.asJsDynamic().methods["getBuffer"](), 0, width * height * Bpp)
-			val type = if (rgba) gl["RGBA"] else gl["LUMINANCE"]
-			bind()
-			glm["texImage2D"](gl["TEXTURE_2D"], 0, type, width, height, 0, type, gl["UNSIGNED_BYTE"], rdata)
-		}
+        fun uploadBuffer(data: Any, width: Int, height: Int, rgba: Boolean) {
+            val Bpp = if (rgba) 4 else 1
+            val rdata = jsNew("Uint8Array", data.asJsDynamic().call("getBuffer"), 0, width * height * Bpp)
+            val type = if (rgba) gl["RGBA"] else gl["LUMINANCE"]
+            bind()
+            //println("Uploading buffer! $width,$height")
+            gl.call("texImage2D", gl["TEXTURE_2D"], 0, type, width, height, 0, type, gl["UNSIGNED_BYTE"], rdata)
+        }
 
-		override fun uploadBuffer(data: ByteBuffer, width: Int, height: Int, kind: Kind) = uploadBuffer(data.array(), width, height, kind == Kind.RGBA)
-		override fun uploadBitmap32(bmp: Bitmap32) = uploadBuffer(bmp.data, bmp.width, bmp.height, true)
-		override fun uploadBitmap8(bmp: Bitmap8) = uploadBuffer(bmp.data, bmp.width, bmp.height, false)
+        // optimized upload version that doesn't require to get actual pixels
+        override fun uploadNativeImage(image: NativeImage) {
+            //void gl.texImage2D(target, level, internalformat, format, type, HTMLCanvasElement? pixels);
 
-		fun bind(): Unit = run { glm["bindTexture"](gl["TEXTURE_2D"], tex) }
-		fun unbind(): Unit = run { glm["bindTexture"](gl["TEXTURE_2D"], null) }
+            val canvasni = image as CanvasNativeImage
+            val canvas = canvasni.canvas
 
-		override fun close(): Unit = run { glm["deleteTexture"](tex) }
+            val type = gl["RGBA"]
 
-		fun setFilter(linear: Boolean) {
-			val minFilter = if (this.mipmaps) {
-				if (linear) gl["LINEAR_MIPMAP_NEAREST"] else gl["NEAREST_MIPMAP_NEAREST"]
-			} else {
-				if (linear) gl["LINEAR"] else gl["NEAREST"]
-			}
-			val magFilter = if (linear) gl["LINEAR"] else gl["NEAREST"]
+            bind()
+            //println("Uploading native image!")
+            gl.call("texImage2D", gl["TEXTURE_2D"], 0, type, type, gl["UNSIGNED_BYTE"], canvas)
+        }
 
-			setWrapST()
-			setMinMag(minFilter.toInt(), magFilter.toInt())
-		}
+        override fun uploadBuffer(data: ByteBuffer, width: Int, height: Int, kind: Kind) = uploadBuffer(data.array(), width, height, kind == Kind.RGBA)
+        override fun uploadBitmap32(bmp: Bitmap32) = uploadBuffer(bmp.data, bmp.width, bmp.height, true)
+        override fun uploadBitmap8(bmp: Bitmap8) = uploadBuffer(bmp.data, bmp.width, bmp.height, false)
 
-		private fun setWrapST() {
-			glm["texParameteri"](gl["TEXTURE_2D"], gl["TEXTURE_WRAP_S"], gl["CLAMP_TO_EDGE"])
-			glm["texParameteri"](gl["TEXTURE_2D"], gl["TEXTURE_WRAP_T"], gl["CLAMP_TO_EDGE"])
-		}
+        fun bind(): Unit = run { gl.call("bindTexture", gl["TEXTURE_2D"], tex) }
+        fun unbind(): Unit = run { gl.call("bindTexture", gl["TEXTURE_2D"], null) }
 
-		private fun setMinMag(min: Int, mag: Int) {
-			glm["texParameteri"](gl["TEXTURE_2D"], gl["TEXTURE_MIN_FILTER"], min)
-			glm["texParameteri"](gl["TEXTURE_2D"], gl["TEXTURE_MAG_FILTER"], mag)
-		}
-	}
+        override fun close(): Unit = run { gl.call("deleteTexture", tex) }
 
-	inner class WebglBuffer(kind: Kind) : Buffer(kind) {
-		val buffer = glm["createBuffer"]()
-		val target = if (kind == Kind.INDEX) gl["ELEMENT_ARRAY_BUFFER"] else gl["ARRAY_BUFFER"]
+        fun setFilter(linear: Boolean) {
+            val minFilter = if (this.mipmaps) {
+                if (linear) gl["LINEAR_MIPMAP_NEAREST"] else gl["NEAREST_MIPMAP_NEAREST"]
+            } else {
+                if (linear) gl["LINEAR"] else gl["NEAREST"]
+            }
+            val magFilter = if (linear) gl["LINEAR"] else gl["NEAREST"]
 
-		fun bind() {
-			glm["bindBuffer"](this.target, this.buffer)
-		}
+            setWrapST()
+            setMinMag(minFilter.toInt(), magFilter.toInt())
+        }
 
-		override fun afterSetMem() {
-			bind()
-			val buffer = mem.asJsDynamic()["buffer"]
-			val typedArray = jsNew("Int8Array", buffer, 0, mem.length)
-			//console.methods["log"](target)
-			//console.methods["log"](typedArray)
-			glm["bufferData"](this.target, typedArray, gl["STATIC_DRAW"])
-		}
+        private fun setWrapST() {
+            gl.call("texParameteri", gl["TEXTURE_2D"], gl["TEXTURE_WRAP_S"], gl["CLAMP_TO_EDGE"])
+            gl.call("texParameteri", gl["TEXTURE_2D"], gl["TEXTURE_WRAP_T"], gl["CLAMP_TO_EDGE"])
+        }
 
-		override fun close() {
-			glm["deleteBuffer"](buffer)
-		}
-	}
+        private fun setMinMag(min: Int, mag: Int) {
+            gl.call("texParameteri", gl["TEXTURE_2D"], gl["TEXTURE_MIN_FILTER"], min)
+            gl.call("texParameteri", gl["TEXTURE_2D"], gl["TEXTURE_MAG_FILTER"], mag)
+        }
+    }
 
-	override fun createTexture(): Texture = WebglTexture()
-	override fun createBuffer(kind: Buffer.Kind): Buffer = WebglBuffer(kind)
+    inner class WebglBuffer(kind: Kind) : Buffer(kind) {
+        val buffer = gl.call("createBuffer")
+        val target = if (kind == Kind.INDEX) gl["ELEMENT_ARRAY_BUFFER"] else gl["ARRAY_BUFFER"]
 
-	private val programs = hashMapOf<Program, WebglProgram>()
+        fun bind() {
+            gl.call("bindBuffer", this.target, this.buffer)
+        }
 
-	fun getProgram(program: Program): WebglProgram = programs.getOrPut(program) { WebglProgram(program) }
+        override fun afterSetMem() {
+            bind()
+            val buffer = mem.asJsDynamic()["buffer"]
+            val typedArray = jsNew("Int8Array", buffer, 0, mem.length)
+            //console.methods["log"](target)
+            //console.methods["log"](typedArray)
+            gl.call("bufferData", this.target, typedArray, gl["STATIC_DRAW"])
+        }
 
-	val VarType.webglElementType: Int get() = when (this) {
-		VarType.Int1 -> gl["INT"].toInt()
-		VarType.Float1, VarType.Float2, VarType.Float3, VarType.Float4 -> gl["FLOAT"].toInt()
-		VarType.Mat4 -> gl["FLOAT"].toInt()
-		VarType.Bool1 -> gl["UNSIGNED_BYTE"].toInt()
-		VarType.Byte4 -> gl["UNSIGNED_BYTE"].toInt()
-		VarType.TextureUnit -> gl["INT"].toInt()
-	}
+        override fun close() {
+            gl.call("deleteBuffer", buffer)
+        }
+    }
 
-	val DrawType.glDrawMode: Int get() = when (this) {
-		DrawType.TRIANGLES -> gl["TRIANGLES"].toInt()
-		DrawType.TRIANGLE_STRIP -> gl["TRIANGLE_STRIP"].toInt()
-	}
+    override fun createTexture(): Texture = WebglTexture()
+    override fun createBuffer(kind: Buffer.Kind): Buffer = WebglBuffer(kind)
 
-	override fun draw(vertices: Buffer, indices: Buffer, program: Program, type: DrawType, vertexLayout: VertexLayout, vertexCount: Int, offset: Int, blending: BlendMode, uniforms: Map<Uniform, Any>) {
-		checkBuffers(vertices, indices)
-		val glProgram = getProgram(program)
-		(vertices as WebglBuffer).bind()
-		(indices as WebglBuffer).bind()
-		glProgram.bind()
+    private val programs = hashMapOf<String, WebglProgram>()
 
-		for (n in vertexLayout.attributePositions.indices) {
-			val att = vertexLayout.attributes[n]
-			val off = vertexLayout.attributePositions[n]
-			val loc = glm["getAttribLocation"](glProgram.program, att.name).toInt()
-			val glElementType = att.type.webglElementType
-			val elementCount = att.type.elementCount
-			val totalSize = vertexLayout.totalSize
-			if (loc >= 0) {
-				glm["enableVertexAttribArray"](loc)
-				glm["vertexAttribPointer"](loc, elementCount, glElementType, att.normalized, totalSize, off)
-			}
-		}
-		var textureUnit = 0
-		for ((uniform, value) in uniforms) {
-			val location = glGetUniformLocation(glProgram, uniform.name) ?: continue
-			when (uniform.type) {
-				VarType.TextureUnit -> {
-					val unit = value as TextureUnit
-					glm["activeTexture"](gl["TEXTURE0"].toInt() + textureUnit)
-					val tex = (unit.texture as WebglTexture?)
-					tex?.bind()
-					tex?.setFilter(unit.linear)
-					glm["uniform1i"](location, textureUnit)
-					textureUnit++
-				}
-				VarType.Mat4 -> {
-					glUniformMatrix4fv(location, false, (value as Matrix4).data)
-				}
-				VarType.Float1 -> {
-					glm["uniform1f"](location, (value as Number).toFloat())
-				}
-				else -> invalidOp("Don't know how to set uniform ${uniform.type}")
-			}
-		}
+    fun getProgram(program: Program): WebglProgram = programs.getOrPut(program.name) { WebglProgram(program) }
 
-		when (blending) {
-			BlendMode.NONE -> {
-				glm["disable"](gl["BLEND"])
-			}
-			BlendMode.OVERLAY -> {
-				glm["enable"](gl["BLEND"])
-				glm["blendFuncSeparate"](gl["SRC_ALPHA"], gl["ONE_MINUS_SRC_ALPHA"], gl["ONE"], gl["ONE_MINUS_SRC_ALPHA"])
-			}
-			else -> Unit
-		}
+    val VarType.webglElementType: Int get() = when (this) {
+        VarType.Int1 -> gl["INT"].toInt()
+        VarType.Float1, VarType.Float2, VarType.Float3, VarType.Float4 -> gl["FLOAT"].toInt()
+        VarType.Mat4 -> gl["FLOAT"].toInt()
+        VarType.Bool1 -> gl["UNSIGNED_BYTE"].toInt()
+        VarType.Byte4 -> gl["UNSIGNED_BYTE"].toInt()
+        VarType.TextureUnit -> gl["INT"].toInt()
+    }
 
-		//glm["drawArrays"](type.glDrawMode, 0, 3)
-		glm["drawElements"](type.glDrawMode, vertexCount, gl["UNSIGNED_SHORT"], offset)
+    val DrawType.glDrawMode: Int get() = when (this) {
+        DrawType.TRIANGLES -> gl["TRIANGLES"].toInt()
+        DrawType.TRIANGLE_STRIP -> gl["TRIANGLE_STRIP"].toInt()
+    }
 
-		glm["activeTexture"](gl["TEXTURE0"])
-		for (att in vertexLayout.attributes) {
-			val loc = glm["getAttribLocation"](glProgram.program, att.name).toInt()
-			if (loc >= 0) {
-				glm["disableVertexAttribArray"](loc)
-			}
-		}
-	}
+    override fun draw(vertices: Buffer, indices: Buffer, program: Program, type: DrawType, vertexLayout: VertexLayout, vertexCount: Int, offset: Int, blending: BlendMode, uniforms: Map<Uniform, Any>) {
+        checkBuffers(vertices, indices)
+        val glProgram = getProgram(program)
+        (vertices as WebglBuffer).bind()
+        (indices as WebglBuffer).bind()
+        glProgram.bind()
 
-	private fun glUniformMatrix4fv(location: Any, b: Boolean, values: FloatArray) {
-		glm["uniformMatrix4fv"](location, b, values.asJsDynamic()["data"])
-	}
+        for (n in vertexLayout.attributePositions.indices) {
+            val att = vertexLayout.attributes[n]
+            val off = vertexLayout.attributePositions[n]
+            val loc = gl.call("getAttribLocation", glProgram.program, att.name).toInt()
+            val glElementType = att.type.webglElementType
+            val elementCount = att.type.elementCount
+            val totalSize = vertexLayout.totalSize
+            if (loc >= 0) {
+                gl.call("enableVertexAttribArray", loc)
+                gl.call("vertexAttribPointer", loc, elementCount, glElementType, att.normalized, totalSize, off)
+            }
+        }
+        var textureUnit = 0
+        for ((uniform, value) in uniforms) {
+            val location = glGetUniformLocation(glProgram, uniform.name) ?: continue
+            when (uniform.type) {
+                VarType.TextureUnit -> {
+                    val unit = value as TextureUnit
+                    gl.call("activeTexture", gl["TEXTURE0"].toInt() + textureUnit)
+                    val tex = (unit.texture as WebglTexture?)
+                    tex?.bind()
+                    tex?.setFilter(unit.linear)
+                    gl.call("uniform1i", location, textureUnit)
+                    textureUnit++
+                }
+                VarType.Mat4 -> {
+                    glUniformMatrix4fv(location, false, (value as Matrix4).data)
+                }
+                VarType.Float1 -> {
+                    gl.call("uniform1f", location, (value as Number).toFloat())
+                }
+                else -> invalidOp("Don't know how to set uniform ${uniform.type}")
+            }
+        }
 
-	private fun glGetUniformLocation(glProgram: WebglProgram, name: String): Any? {
-		return glm["getUniformLocation"](glProgram.program, name)
-	}
+        when (blending) {
+            BlendMode.NONE -> {
+                gl.call("disable", gl["BLEND"])
+            }
+            BlendMode.OVERLAY -> {
+                gl.call("enable", gl["BLEND"])
+                gl.call("blendFuncSeparate", gl["SRC_ALPHA"], gl["ONE_MINUS_SRC_ALPHA"], gl["ONE"], gl["ONE_MINUS_SRC_ALPHA"])
+            }
+            else -> Unit
+        }
 
-	val tempTextures = arrayListOf<Texture>()
+        //gl["drawArrays"](type.glDrawMode, 0, 3)
+        gl.call("drawElements", type.glDrawMode, vertexCount, gl["UNSIGNED_SHORT"], offset)
 
-	override fun disposeTemporalPerFrameStuff() {
-		for (tt in tempTextures) tt.close()
-		tempTextures.clear()
-	}
+        gl.call("activeTexture", gl["TEXTURE0"])
+        for (att in vertexLayout.attributes) {
+            val loc = gl.call("getAttribLocation", glProgram.program, att.name).toInt()
+            if (loc >= 0) {
+                gl.call("disableVertexAttribArray", loc)
+            }
+        }
+    }
 
-	override fun flipInternal() {
-	}
+    private fun glUniformMatrix4fv(location: Any, b: Boolean, values: FloatArray) {
+        gl.call("uniformMatrix4fv", location, b, values.asJsDynamic()["data"])
+    }
 
-	inner class WebglRenderBuffer() : RenderBuffer(this) {
-		val wtex = tex as WebglTexture
+    private fun glGetUniformLocation(glProgram: WebglProgram, name: String): Any? {
+        return gl.call("getUniformLocation", glProgram.program, name)
+    }
 
-		val renderbuffer = glm["createRenderbuffer"]()
-		val framebuffer = glm["createFramebuffer"]()
-		var oldViewport = IntArray(4)
+    val tempTextures = arrayListOf<Texture>()
 
-		override fun start(width: Int, height: Int) {
-			oldViewport = glm["getParameter"](gl["VIEWPORT"]).toIntArray()
-			//println("oldViewport:${oldViewport.toList()}")
-			glm["bindTexture"](gl["TEXTURE_2D"], wtex.tex)
-			glm["texParameteri"](gl["TEXTURE_2D"], gl["TEXTURE_MAG_FILTER"], gl["LINEAR"])
-			glm["texParameteri"](gl["TEXTURE_2D"], gl["TEXTURE_MIN_FILTER"], gl["LINEAR"])
-			glm["texImage2D"](gl["TEXTURE_2D"], 0, gl["RGBA"], width, height, 0, gl["RGBA"], gl["UNSIGNED_BYTE"], null)
-			glm["bindTexture"](gl["TEXTURE_2D"], null)
-			glm["bindRenderbuffer"](gl["RENDERBUFFER"], renderbuffer)
-			glm["bindFramebuffer"](gl["FRAMEBUFFER"], framebuffer)
-			glm["framebufferTexture2D"](gl["FRAMEBUFFER"], gl["COLOR_ATTACHMENT0"], gl["TEXTURE_2D"], wtex.tex, 0)
-			glm["renderbufferStorage"](gl["RENDERBUFFER"], gl["DEPTH_COMPONENT16"], width, height)
-			glm["framebufferRenderbuffer"](gl["FRAMEBUFFER"], gl["DEPTH_ATTACHMENT"], gl["RENDERBUFFER"], renderbuffer)
-			glm["viewport"](0, 0, width, height)
-		}
+    override fun disposeTemporalPerFrameStuff() {
+        for (tt in tempTextures) tt.close()
+        tempTextures.clear()
+    }
 
-		override fun end() {
-			glm["flush"]()
-			glm["bindTexture"](gl["TEXTURE_2D"], null)
-			glm["bindRenderbuffer"](gl["RENDERBUFFER"], null)
-			glm["bindFramebuffer"](gl["FRAMEBUFFER"], null)
-			glm["viewport"](oldViewport[0], oldViewport[1], oldViewport[2], oldViewport[3])
-		}
+    override fun flipInternal() {
+    }
 
-		override fun readBitmap(bmp: Bitmap32) {
-			val data = UByteArray(bmp.area * 4)
+    inner class WebglRenderBuffer() : RenderBuffer(this) {
+        val wtex = tex as WebglTexture
 
-			glm["readPixels"](0, 0, bmp.width, bmp.height, gl["RGBA"], gl["UNSIGNED_BYTE"], jsNew("Uint8Array", data.data.asJsDynamic()["data"]["buffer"]))
+        val renderbuffer = gl.call("createRenderbuffer")
+        val framebuffer = gl.call("createFramebuffer")
+        var oldViewport = IntArray(4)
 
-			val ibuffer = JTranscArrays.nativeReinterpretAsInt(data.data)
-			for (n in 0 until bmp.area) bmp.data[n] = RGBA.rgbaToBgra(ibuffer[n])
-		}
+        override fun start(width: Int, height: Int) {
+            oldViewport = gl.call("getParameter", gl["VIEWPORT"]).toIntArray()
+            //println("oldViewport:${oldViewport.toList()}")
+            gl.call("bindTexture", gl["TEXTURE_2D"], wtex.tex)
+            gl.call("texParameteri", gl["TEXTURE_2D"], gl["TEXTURE_MAG_FILTER"], gl["LINEAR"])
+            gl.call("texParameteri", gl["TEXTURE_2D"], gl["TEXTURE_MIN_FILTER"], gl["LINEAR"])
+            gl.call("texImage2D", gl["TEXTURE_2D"], 0, gl["RGBA"], width, height, 0, gl["RGBA"], gl["UNSIGNED_BYTE"], null)
+            gl.call("bindTexture", gl["TEXTURE_2D"], null)
+            gl.call("bindRenderbuffer", gl["RENDERBUFFER"], renderbuffer)
+            gl.call("bindFramebuffer", gl["FRAMEBUFFER"], framebuffer)
+            gl.call("framebufferTexture2D", gl["FRAMEBUFFER"], gl["COLOR_ATTACHMENT0"], gl["TEXTURE_2D"], wtex.tex, 0)
+            gl.call("renderbufferStorage", gl["RENDERBUFFER"], gl["DEPTH_COMPONENT16"], width, height)
+            gl.call("framebufferRenderbuffer", gl["FRAMEBUFFER"], gl["DEPTH_ATTACHMENT"], gl["RENDERBUFFER"], renderbuffer)
+            gl.call("viewport", 0, 0, width, height)
+        }
 
-		override fun close() {
-			glm["deleteFramebuffer"](framebuffer)
-			glm["deleteRenderbuffer"](renderbuffer)
-		}
-	}
+        override fun end() {
+            gl.call("flush")
+            gl.call("bindTexture", gl["TEXTURE_2D"], null)
+            gl.call("bindRenderbuffer", gl["RENDERBUFFER"], null)
+            gl.call("bindFramebuffer", gl["FRAMEBUFFER"], null)
+            gl.call("viewport", oldViewport[0], oldViewport[1], oldViewport[2], oldViewport[3])
+        }
 
-	override fun createRenderBuffer(): RenderBuffer = WebglRenderBuffer()
+        override fun readBitmap(bmp: Bitmap32) {
+            val data = UByteArray(bmp.area * 4)
+
+            gl.call("readPixels", 0, 0, bmp.width, bmp.height, gl["RGBA"], gl["UNSIGNED_BYTE"], jsNew("Uint8Array", data.data.asJsDynamic()["data"]["buffer"]))
+
+            val ibuffer = JTranscArrays.nativeReinterpretAsInt(data.data)
+            for (n in 0 until bmp.area) bmp.data[n] = RGBA.rgbaToBgra(ibuffer[n])
+        }
+
+        override fun close() {
+            gl.call("deleteFramebuffer", framebuffer)
+            gl.call("deleteRenderbuffer", renderbuffer)
+        }
+    }
+
+    override fun createRenderBuffer(): RenderBuffer = WebglRenderBuffer()
 }
 
 @JTranscMethodBody(target = "js", value = "return JA_I.fromTypedArray(new Int32Array(p0));")

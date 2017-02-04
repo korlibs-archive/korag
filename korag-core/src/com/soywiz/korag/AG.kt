@@ -7,6 +7,7 @@ import com.soywiz.korag.shader.VertexLayout
 import com.soywiz.korim.bitmap.Bitmap
 import com.soywiz.korim.bitmap.Bitmap32
 import com.soywiz.korim.bitmap.Bitmap8
+import com.soywiz.korim.bitmap.NativeImage
 import com.soywiz.korim.color.RGBA
 import com.soywiz.korio.async.Signal
 import com.soywiz.korio.error.invalidOp
@@ -47,6 +48,7 @@ abstract class AG {
 
 		fun upload(bmp: Bitmap, mipmaps: Boolean = false): Texture {
 			when (bmp) {
+				is NativeImage -> uploadNativeImage(bmp)
 				is Bitmap8 -> uploadBitmap8(bmp)
 				is Bitmap32 -> uploadBitmap32(bmp)
 				else -> invalidOp("Unknown bitmap type: $bmp")
@@ -60,6 +62,10 @@ abstract class AG {
 		open protected fun createMipmaps() = false
 
 		open fun uploadBuffer(data: ByteBuffer, width: Int, height: Int, kind: Kind) {
+		}
+
+		open fun uploadNativeImage(image: NativeImage) {
+			uploadBitmap32(image.toBmp32())
 		}
 
 		open fun uploadBitmap32(bmp: Bitmap32) {

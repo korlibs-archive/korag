@@ -5,6 +5,8 @@ apply plugin: 'kotlin'
 dependencies {
     compile project(":korag-core")
 
+    compile "com.soywiz:korim:$korVersion"
+
     compile "org.jogamp.gluegen:gluegen-rt:2.3.1"
     compile "org.jogamp.jogl:jogl-all:2.3.1"
 
