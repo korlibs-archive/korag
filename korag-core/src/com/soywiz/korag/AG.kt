@@ -52,6 +52,8 @@ abstract class AG {
     open var backWidth: Int = 640
     open var backHeight: Int = 480
 
+    open val pixelDensity: Double = 1.0
+
     val onReady = Signal<AG>()
     val onRender = Signal<AG>()
 

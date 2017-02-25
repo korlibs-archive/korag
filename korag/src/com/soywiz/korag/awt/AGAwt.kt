@@ -1,7 +1,5 @@
 package com.soywiz.korag.awt
 
-import com.jogamp.nativewindow.ScalableSurface
-import com.jogamp.nativewindow.awt.JAWTWindow
 import com.jogamp.newt.opengl.GLWindow
 import com.jogamp.opengl.*
 import com.jogamp.opengl.awt.GLCanvas
@@ -28,6 +26,7 @@ import java.nio.ByteBuffer
 class AGFactoryAwt : AGFactory() {
 	override val priority = 500
 	override val supportsNativeFrame = true
+
 	override fun create() = AGAwt()
 	override fun createFastWindow(title: String, width: Int, height: Int): AGWindow {
 		val glp = GLProfile.getDefault()
@@ -73,6 +72,8 @@ abstract class AGAwtBase : AG() {
 	lateinit var ad: GLAutoDrawable
 	lateinit var gl: GL2
 	lateinit var glThread: Thread
+
+	override var pixelDensity: Double = 1.0
 
 	protected fun setAutoDrawable(d: GLAutoDrawable) {
 		glThread = Thread.currentThread()
@@ -385,6 +386,7 @@ class AGAwt : AGAwtBase() {
 		//}
 	}
 
+
 	init {
 		//((glcanvas as JoglNewtAwtCanvas).getNativeWindow() as JAWTWindow).setSurfaceScale(new float[] {2, 2});
 		//glcanvas.nativeSurface.
@@ -397,10 +399,12 @@ class AGAwt : AGAwtBase() {
 				val scaleX = glcanvas.width.toDouble() / glcanvas.surfaceWidth.toDouble()
 				val scaleY = glcanvas.height.toDouble() / glcanvas.surfaceHeight.toDouble()
 
+				pixelDensity = (scaleX + scaleY) * 0.5
+
 				//println("scale($scaleX, $scaleY)")
 
-				backWidth = (width * scaleX).toInt()
-				backHeight = (height * scaleY).toInt()
+				backWidth = (width * pixelDensity).toInt()
+				backHeight = (height * pixelDensity).toInt()
 				//d.gl.glViewport(0, 0, width, height)
 				resized()
 				//println("a")

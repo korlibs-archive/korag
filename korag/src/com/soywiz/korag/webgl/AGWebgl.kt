@@ -36,7 +36,7 @@ class AGWebgl : AG() {
     val glOpts = jsObject("premultipliedAlpha" to false)
     val gl = canvas.call("getContext", "webgl", glOpts) ?: canvas.call("getContext", "experimental-webgl", glOpts)
     override val nativeComponent: Any = canvas
-
+    override val pixelDensity: Double get() = window["devicePixelRatio"]?.toDouble() ?: 1.0
     val onReadyOnce = Once()
 
     override fun repaint() {
