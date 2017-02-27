@@ -36,18 +36,10 @@ class AGFactoryAwt : AGFactory() {
 		window.setSize(width, height)
 		window.isVisible = true
 		window.addGLEventListener(object : GLEventListener {
-			override fun reshape(drawable: GLAutoDrawable, x: Int, y: Int, width: Int, height: Int) {
-			}
-
-			override fun display(drawable: GLAutoDrawable) {
-				drawable
-			}
-
-			override fun init(drawable: GLAutoDrawable) {
-			}
-
-			override fun dispose(drawable: GLAutoDrawable) {
-			}
+			override fun reshape(drawable: GLAutoDrawable, x: Int, y: Int, width: Int, height: Int) = Unit
+			override fun display(drawable: GLAutoDrawable) = Unit
+			override fun init(drawable: GLAutoDrawable) = Unit
+			override fun dispose(drawable: GLAutoDrawable) = Unit
 		})
 
 		return object : AGWindow() {
@@ -56,10 +48,7 @@ class AGFactoryAwt : AGFactory() {
 			override val onMouseOver: Signal<Unit> = Signal()
 			override val onMouseUp: Signal<Unit> = Signal()
 			override val onMouseDown: Signal<Unit> = Signal()
-
-			override fun repaint() {
-			}
-
+			override fun repaint() = Unit
 			override val ag: AG = AGAwtNative(window)
 		}
 	}
