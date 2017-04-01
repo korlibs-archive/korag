@@ -11,6 +11,7 @@ import com.soywiz.korim.bitmap.NativeImage
 import com.soywiz.korim.color.RGBA
 import com.soywiz.korio.async.Signal
 import com.soywiz.korio.error.invalidOp
+import com.soywiz.korio.util.Extra
 import com.soywiz.korio.util.Pool
 import java.io.Closeable
 import java.nio.ByteBuffer
@@ -47,7 +48,7 @@ abstract class AGWindow : AGContainer {
     abstract override val ag: AG
 }
 
-abstract class AG {
+abstract class AG : Extra by Extra.Mixin() {
     abstract val nativeComponent: Any
     open var backWidth: Int = 640
     open var backHeight: Int = 480
@@ -183,6 +184,8 @@ abstract class AG {
     enum class DrawType {
         TRIANGLES, TRIANGLE_STRIP
     }
+
+    val dummyTexture by lazy { createTexture() }
 
     open fun createTexture(): Texture = Texture()
     fun createTexture(bmp: Bitmap, mipmaps: Boolean = false): Texture = createTexture().upload(bmp, mipmaps)
