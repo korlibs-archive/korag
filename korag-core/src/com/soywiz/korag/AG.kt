@@ -13,6 +13,7 @@ import com.soywiz.korio.async.Signal
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.util.Extra
 import com.soywiz.korio.util.Pool
+import com.soywiz.korma.geom.Size
 import java.io.Closeable
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -52,6 +53,8 @@ abstract class AG : Extra by Extra.Mixin() {
     abstract val nativeComponent: Any
     open var backWidth: Int = 640
     open var backHeight: Int = 480
+
+    open val maxTextureSize = Size(2048, 2048)
 
     open val pixelDensity: Double = 1.0
 
