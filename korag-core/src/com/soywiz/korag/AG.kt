@@ -67,6 +67,9 @@ abstract class AG : Extra by Extra.Mixin() {
     open fun resized() {
     }
 
+    open fun dispose() {
+    }
+
     open class Texture : Closeable {
         var mipmaps = false
 

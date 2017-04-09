@@ -32,6 +32,8 @@ open class LogAG(
 
 	override fun resized() = log("resized()")
 
+	override fun dispose() = log("dispose()")
+
 	inner class LogTexture(val id: Int) : Texture() {
 		override fun createMipmaps(): Boolean = true.also { log("$this.createMipmaps()") }
 		override fun uploadBuffer(data: ByteBuffer, width: Int, height: Int, kind: Kind) = log("$this.uploadBuffer($data, $width, $height, $kind)")

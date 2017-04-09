@@ -50,6 +50,11 @@ class AGWebgl : AG() {
         gl.call("viewport", 0, 0, canvas["width"], canvas["height"])
     }
 
+    override fun dispose() {
+        // https://www.khronos.org/webgl/wiki/HandlingContextLost
+        // https://gist.github.com/mattdesl/9995467
+    }
+
     override fun clear(color: Int, depth: Float, stencil: Int, clearColor: Boolean, clearDepth: Boolean, clearStencil: Boolean) {
         gl.call("clearColor", RGBA.getRf(color), RGBA.getGf(color), RGBA.getBf(color), RGBA.getAf(color))
         gl.call("clearDepth", depth)
