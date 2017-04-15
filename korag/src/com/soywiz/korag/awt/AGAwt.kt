@@ -410,7 +410,7 @@ class AGAwt : AGAwtBase() {
 				//}
 
 				onReadyOnce {
-					onReady(awtBase)
+					ready()
 				}
 				onRender(awtBase)
 				checkErrors { gl.glFlush() }

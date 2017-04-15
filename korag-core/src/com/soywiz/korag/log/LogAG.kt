@@ -17,6 +17,10 @@ open class LogAG(
 	val log = arrayListOf<String>()
 	override val nativeComponent: Any = Object()
 
+	init {
+		ready()
+	}
+
 	private fun log(str: String) {
 		this.log += str
 		//println(str)

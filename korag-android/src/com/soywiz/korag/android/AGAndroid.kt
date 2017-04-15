@@ -45,7 +45,7 @@ class AGAndroid : AG() {
 
 			private fun initializeOnce() {
 				onReadyOnce {
-					onReady(ag)
+					ready()
 				}
 			}
 

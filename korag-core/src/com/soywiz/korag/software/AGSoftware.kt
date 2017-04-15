@@ -10,4 +10,8 @@ class AGFactorySoftware() : AGFactory() {
 
 class AGSoftware : AG() {
 	override val nativeComponent: Any = Object()
+
+	init {
+		ready()
+	}
 }

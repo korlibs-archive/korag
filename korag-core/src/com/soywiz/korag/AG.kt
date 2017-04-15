@@ -9,6 +9,7 @@ import com.soywiz.korim.bitmap.Bitmap32
 import com.soywiz.korim.bitmap.Bitmap8
 import com.soywiz.korim.bitmap.NativeImage
 import com.soywiz.korim.color.RGBA
+import com.soywiz.korio.async.Promise
 import com.soywiz.korio.async.Signal
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.util.Extra
@@ -20,293 +21,298 @@ import java.nio.ByteOrder
 import java.util.*
 
 val agFactory by lazy {
-    ServiceLoader.load(AGFactory::class.java).toList().filter(AGFactory::available).sortedBy(AGFactory::priority).firstOrNull()
-            ?: invalidOp("Can't find AGFactory implementation")
+	ServiceLoader.load(AGFactory::class.java).toList().filter(AGFactory::available).sortedBy(AGFactory::priority).firstOrNull()
+		?: invalidOp("Can't find AGFactory implementation")
 }
 
 abstract class AGFactory {
-    open val available: Boolean = true
-    open val supportsNativeFrame: Boolean = false
-    open val priority: Int = 4000
+	open val available: Boolean = true
+	open val supportsNativeFrame: Boolean = false
+	open val priority: Int = 4000
 
-    abstract fun create(): AG
-    open fun createFastWindow(title: String, width: Int, height: Int): AGWindow = invalidOp("Not supported")
+	abstract fun create(): AG
+	open fun createFastWindow(title: String, width: Int, height: Int): AGWindow = invalidOp("Not supported")
 }
 
 interface AGContainer {
-    val ag: AG
+	val ag: AG
 
-    val mouseX: Int
-    val mouseY: Int
-    val onMouseOver: Signal<Unit>
-    val onMouseUp: Signal<Unit>
-    val onMouseDown: Signal<Unit>
+	val mouseX: Int
+	val mouseY: Int
+	val onMouseOver: Signal<Unit>
+	val onMouseUp: Signal<Unit>
+	val onMouseDown: Signal<Unit>
 
-    fun repaint(): Unit
+	fun repaint(): Unit
 }
 
 abstract class AGWindow : AGContainer {
-    abstract override val ag: AG
+	abstract override val ag: AG
 }
 
 abstract class AG : Extra by Extra.Mixin() {
-    abstract val nativeComponent: Any
-    open var backWidth: Int = 640
-    open var backHeight: Int = 480
+	abstract val nativeComponent: Any
+	open var backWidth: Int = 640
+	open var backHeight: Int = 480
 
-    open val maxTextureSize = Size(2048, 2048)
+	open val maxTextureSize = Size(2048, 2048)
 
-    open val pixelDensity: Double = 1.0
+	open val pixelDensity: Double = 1.0
 
-    val onReady = Signal<AG>()
-    val onRender = Signal<AG>()
+	private val onReadyDeferred = Promise.Deferred<AG>()
+	protected fun ready() {
+		onReadyDeferred.resolve(this)
+	}
 
-    open fun repaint() {
-    }
+	val onReady = onReadyDeferred.promise
+	val onRender = Signal<AG>()
 
-    open fun resized() {
-    }
+	open fun repaint() {
+	}
 
-    open fun dispose() {
-    }
+	open fun resized() {
+	}
 
-    open class Texture : Closeable {
-        var mipmaps = false
+	open fun dispose() {
+	}
 
-        fun upload(bmp: Bitmap, mipmaps: Boolean = false): Texture {
-            when (bmp) {
-                is NativeImage -> uploadNativeImage(bmp)
-                is Bitmap8 -> uploadBitmap8(bmp)
-                is Bitmap32 -> uploadBitmap32(bmp)
-                else -> invalidOp("Unknown bitmap type: $bmp")
-            }
-            this.mipmaps = if (mipmaps) createMipmaps() else false
-            return this
-        }
+	open class Texture : Closeable {
+		var mipmaps = false
 
-        enum class Kind { RGBA, LUMINANCE }
+		fun upload(bmp: Bitmap, mipmaps: Boolean = false): Texture {
+			when (bmp) {
+				is NativeImage -> uploadNativeImage(bmp)
+				is Bitmap8 -> uploadBitmap8(bmp)
+				is Bitmap32 -> uploadBitmap32(bmp)
+				else -> invalidOp("Unknown bitmap type: $bmp")
+			}
+			this.mipmaps = if (mipmaps) createMipmaps() else false
+			return this
+		}
 
-        open protected fun createMipmaps() = false
+		enum class Kind { RGBA, LUMINANCE }
 
-        open fun uploadBuffer(data: ByteBuffer, width: Int, height: Int, kind: Kind) {
-        }
+		open protected fun createMipmaps() = false
 
-        open fun uploadNativeImage(image: NativeImage) {
-            uploadBitmap32(image.toBmp32())
-        }
+		open fun uploadBuffer(data: ByteBuffer, width: Int, height: Int, kind: Kind) {
+		}
 
-        open fun uploadBitmap32(bmp: Bitmap32) {
-            val buffer = ByteBuffer.allocateDirect(bmp.area * 4).order(ByteOrder.nativeOrder())
-            val intBuffer = buffer.asIntBuffer()
-            //intBuffer.clear()
-            for (n in 0 until bmp.area) intBuffer.put(bmp.data[n])
-            //intBuffer.flip()
-            //buffer.limit(intBuffer.limit() * 4)
-            uploadBuffer(buffer, bmp.width, bmp.height, Kind.RGBA)
-        }
+		open fun uploadNativeImage(image: NativeImage) {
+			uploadBitmap32(image.toBmp32())
+		}
 
-        open fun uploadBitmap8(bmp: Bitmap8) {
-            val buffer = ByteBuffer.allocateDirect(bmp.area * 4).order(ByteOrder.nativeOrder())
-            //buffer.clear()
-            buffer.put(bmp.data)
-            //buffer.flip()
-            uploadBuffer(buffer, bmp.width, bmp.height, Kind.LUMINANCE)
-        }
+		open fun uploadBitmap32(bmp: Bitmap32) {
+			val buffer = ByteBuffer.allocateDirect(bmp.area * 4).order(ByteOrder.nativeOrder())
+			val intBuffer = buffer.asIntBuffer()
+			//intBuffer.clear()
+			for (n in 0 until bmp.area) intBuffer.put(bmp.data[n])
+			//intBuffer.flip()
+			//buffer.limit(intBuffer.limit() * 4)
+			uploadBuffer(buffer, bmp.width, bmp.height, Kind.RGBA)
+		}
 
-        override fun close() {
-        }
-    }
+		open fun uploadBitmap8(bmp: Bitmap8) {
+			val buffer = ByteBuffer.allocateDirect(bmp.area * 4).order(ByteOrder.nativeOrder())
+			//buffer.clear()
+			buffer.put(bmp.data)
+			//buffer.flip()
+			uploadBuffer(buffer, bmp.width, bmp.height, Kind.LUMINANCE)
+		}
 
-    data class TextureUnit(
-            var texture: AG.Texture? = null,
-            var linear: Boolean = true
-    )
+		override fun close() {
+		}
+	}
 
-    open class Buffer(val kind: Kind) : Closeable {
-        enum class Kind { INDEX, VERTEX }
+	data class TextureUnit(
+		var texture: AG.Texture? = null,
+		var linear: Boolean = true
+	)
 
-        var dirty = false
-        protected var mem: FastMemory = FastMemory.alloc(0)
+	open class Buffer(val kind: Kind) : Closeable {
+		enum class Kind { INDEX, VERTEX }
 
-        open fun afterSetMem() {
-        }
+		var dirty = false
+		protected var mem: FastMemory = FastMemory.alloc(0)
 
-        fun upload(data: ByteBuffer, offset: Int = 0, length: Int = data.limit()): Buffer {
-            // @TODO: Optimize this
-            mem = FastMemory.alloc(length)
-            for (n in 0 until length) {
-                mem.setInt8(n, data.get(offset + n).toInt())
-            }
-            dirty = true
-            afterSetMem()
-            return this
-        }
+		open fun afterSetMem() {
+		}
 
-        fun upload(data: ByteArray, offset: Int = 0, length: Int = data.size): Buffer {
-            mem = FastMemory.alloc(length)
-            mem.setArrayInt8(0, data, offset, length)
-            dirty = true
-            afterSetMem()
-            return this
-        }
+		fun upload(data: ByteBuffer, offset: Int = 0, length: Int = data.limit()): Buffer {
+			// @TODO: Optimize this
+			mem = FastMemory.alloc(length)
+			for (n in 0 until length) {
+				mem.setInt8(n, data.get(offset + n).toInt())
+			}
+			dirty = true
+			afterSetMem()
+			return this
+		}
 
-        fun upload(data: FloatArray, offset: Int = 0, length: Int = data.size): Buffer {
-            mem = FastMemory.alloc(length * 4)
-            mem.setArrayFloat32(0, data, offset, length)
-            dirty = true
-            afterSetMem()
-            return this
-        }
+		fun upload(data: ByteArray, offset: Int = 0, length: Int = data.size): Buffer {
+			mem = FastMemory.alloc(length)
+			mem.setArrayInt8(0, data, offset, length)
+			dirty = true
+			afterSetMem()
+			return this
+		}
 
-        fun upload(data: IntArray, offset: Int = 0, length: Int = data.size): Buffer {
-            mem = FastMemory.alloc(length * 4)
-            mem.setArrayInt32(0, data, offset, length)
-            dirty = true
-            afterSetMem()
-            return this
-        }
+		fun upload(data: FloatArray, offset: Int = 0, length: Int = data.size): Buffer {
+			mem = FastMemory.alloc(length * 4)
+			mem.setArrayFloat32(0, data, offset, length)
+			dirty = true
+			afterSetMem()
+			return this
+		}
 
-        fun upload(data: ShortArray, offset: Int = 0, length: Int = data.size): Buffer {
-            mem = FastMemory.alloc(length * 2)
-            mem.setArrayInt16(0, data, offset, length)
-            dirty = true
-            afterSetMem()
-            return this
+		fun upload(data: IntArray, offset: Int = 0, length: Int = data.size): Buffer {
+			mem = FastMemory.alloc(length * 4)
+			mem.setArrayInt32(0, data, offset, length)
+			dirty = true
+			afterSetMem()
+			return this
+		}
 
-        }
+		fun upload(data: ShortArray, offset: Int = 0, length: Int = data.size): Buffer {
+			mem = FastMemory.alloc(length * 2)
+			mem.setArrayInt16(0, data, offset, length)
+			dirty = true
+			afterSetMem()
+			return this
 
-        fun upload(data: FastMemory, offset: Int = 0, length: Int = data.length): Buffer {
-            mem = FastMemory.alloc(length)
-            FastMemory.copy(data, offset, mem, 0, length)
-            dirty = true
-            afterSetMem()
-            return this
-        }
+		}
 
-        override fun close() {
-        }
-    }
+		fun upload(data: FastMemory, offset: Int = 0, length: Int = data.length): Buffer {
+			mem = FastMemory.alloc(length)
+			FastMemory.copy(data, offset, mem, 0, length)
+			dirty = true
+			afterSetMem()
+			return this
+		}
 
-    enum class DrawType {
-        TRIANGLES, TRIANGLE_STRIP
-    }
+		override fun close() {
+		}
+	}
 
-    val dummyTexture by lazy { createTexture() }
+	enum class DrawType {
+		TRIANGLES, TRIANGLE_STRIP
+	}
 
-    open fun createTexture(): Texture = Texture()
-    fun createTexture(bmp: Bitmap, mipmaps: Boolean = false): Texture = createTexture().upload(bmp, mipmaps)
-    open fun createBuffer(kind: Buffer.Kind) = Buffer(kind)
-    fun createIndexBuffer() = createBuffer(Buffer.Kind.INDEX)
-    fun createVertexBuffer() = createBuffer(Buffer.Kind.VERTEX)
+	val dummyTexture by lazy { createTexture() }
 
-    fun createIndexBuffer(data: ShortArray, offset: Int = 0, length: Int = data.size - offset) = createIndexBuffer().apply {
-        upload(data, offset, length)
-    }
+	open fun createTexture(): Texture = Texture()
+	fun createTexture(bmp: Bitmap, mipmaps: Boolean = false): Texture = createTexture().upload(bmp, mipmaps)
+	open fun createBuffer(kind: Buffer.Kind) = Buffer(kind)
+	fun createIndexBuffer() = createBuffer(Buffer.Kind.INDEX)
+	fun createVertexBuffer() = createBuffer(Buffer.Kind.VERTEX)
 
-    fun createVertexBuffer(data: FloatArray, offset: Int = 0, length: Int = data.size - offset) = createVertexBuffer().apply {
-        upload(data, offset, length)
-    }
+	fun createIndexBuffer(data: ShortArray, offset: Int = 0, length: Int = data.size - offset) = createIndexBuffer().apply {
+		upload(data, offset, length)
+	}
 
-    fun createVertexBuffer(data: FastMemory, offset: Int = 0, length: Int = data.length - offset) = createVertexBuffer().apply {
-        upload(data, offset, length)
-    }
+	fun createVertexBuffer(data: FloatArray, offset: Int = 0, length: Int = data.size - offset) = createVertexBuffer().apply {
+		upload(data, offset, length)
+	}
 
-    open fun draw(vertices: Buffer, indices: Buffer, program: Program, type: DrawType, vertexLayout: VertexLayout, vertexCount: Int, offset: Int = 0, blending: BlendMode = BlendMode.OVERLAY, uniforms: Map<Uniform, Any> = mapOf()) {
-        //VertexFormat()
-        //	.add("hello", VertexFormat.Element.Type.Byte4)
-    }
+	fun createVertexBuffer(data: FastMemory, offset: Int = 0, length: Int = data.length - offset) = createVertexBuffer().apply {
+		upload(data, offset, length)
+	}
 
-    fun draw(vertices: Buffer, program: Program, type: DrawType, vertexLayout: VertexLayout, vertexCount: Int, offset: Int = 0, blending: BlendMode = BlendMode.OVERLAY, uniforms: Map<Uniform, Any> = mapOf()) {
-        createIndexBuffer((0 until vertexCount).map(Int::toShort).toShortArray()).use { indices ->
-            draw(vertices, indices, program, type, vertexLayout, vertexCount, offset, blending, uniforms)
-        }
-        //VertexFormat()
-        //	.add("hello", VertexFormat.Element.Type.Byte4)
-    }
+	open fun draw(vertices: Buffer, indices: Buffer, program: Program, type: DrawType, vertexLayout: VertexLayout, vertexCount: Int, offset: Int = 0, blending: BlendMode = BlendMode.OVERLAY, uniforms: Map<Uniform, Any> = mapOf()) {
+		//VertexFormat()
+		//	.add("hello", VertexFormat.Element.Type.Byte4)
+	}
 
-    protected fun checkBuffers(vertices: AG.Buffer, indices: AG.Buffer) {
-        if (vertices.kind != AG.Buffer.Kind.VERTEX) invalidOp("Not a VertexBuffer")
-        if (indices.kind != AG.Buffer.Kind.INDEX) invalidOp("Not a IndexBuffer")
-    }
+	fun draw(vertices: Buffer, program: Program, type: DrawType, vertexLayout: VertexLayout, vertexCount: Int, offset: Int = 0, blending: BlendMode = BlendMode.OVERLAY, uniforms: Map<Uniform, Any> = mapOf()) {
+		createIndexBuffer((0 until vertexCount).map(Int::toShort).toShortArray()).use { indices ->
+			draw(vertices, indices, program, type, vertexLayout, vertexCount, offset, blending, uniforms)
+		}
+		//VertexFormat()
+		//	.add("hello", VertexFormat.Element.Type.Byte4)
+	}
 
-    open fun disposeTemporalPerFrameStuff() = Unit
+	protected fun checkBuffers(vertices: AG.Buffer, indices: AG.Buffer) {
+		if (vertices.kind != AG.Buffer.Kind.VERTEX) invalidOp("Not a VertexBuffer")
+		if (indices.kind != AG.Buffer.Kind.INDEX) invalidOp("Not a IndexBuffer")
+	}
 
-    val frameRenderBuffers = java.util.ArrayList<RenderBuffer>()
-    val renderBuffers = Pool<RenderBuffer>() { createRenderBuffer() }
+	open fun disposeTemporalPerFrameStuff() = Unit
 
-    open class RenderBuffer(val ag: AG) : Closeable {
-        val tex = ag.createTexture()
+	val frameRenderBuffers = java.util.ArrayList<RenderBuffer>()
+	val renderBuffers = Pool<RenderBuffer>() { createRenderBuffer() }
 
-        open fun start(width: Int, height: Int) = Unit
-        open fun end() = Unit
-        open fun readBitmap(bmp: Bitmap32) = Unit
-        override fun close() = Unit
-    }
+	open class RenderBuffer(val ag: AG) : Closeable {
+		val tex = ag.createTexture()
 
-    open protected fun createRenderBuffer() = RenderBuffer(this)
+		open fun start(width: Int, height: Int) = Unit
+		open fun end() = Unit
+		open fun readBitmap(bmp: Bitmap32) = Unit
+		override fun close() = Unit
+	}
 
-    fun flip() {
-        disposeTemporalPerFrameStuff()
-        renderBuffers.free(frameRenderBuffers)
-        frameRenderBuffers.clear()
-        flipInternal()
-    }
+	open protected fun createRenderBuffer() = RenderBuffer(this)
 
-    protected open fun flipInternal() = Unit
+	fun flip() {
+		disposeTemporalPerFrameStuff()
+		renderBuffers.free(frameRenderBuffers)
+		frameRenderBuffers.clear()
+		flipInternal()
+	}
 
-    open fun clear(color: Int = RGBA(0, 0, 0, 0xFF), depth: Float = 0f, stencil: Int = 0, clearColor: Boolean = true, clearDepth: Boolean = true, clearStencil: Boolean = true) = Unit
+	protected open fun flipInternal() = Unit
 
-    class RenderTexture(val tex: Texture, val width: Int, val height: Int)
+	open fun clear(color: Int = RGBA(0, 0, 0, 0xFF), depth: Float = 0f, stencil: Int = 0, clearColor: Boolean = true, clearDepth: Boolean = true, clearStencil: Boolean = true) = Unit
 
-    var renderingToTexture = false
+	class RenderTexture(val tex: Texture, val width: Int, val height: Int)
 
-    inline fun renderToTexture(width: Int, height: Int, callback: () -> Unit): RenderTexture {
-        val oldRendering = renderingToTexture
-        val oldWidth = backWidth
-        val oldHeight = backHeight
-        renderingToTexture = true
-        backWidth = width
-        backHeight = height
-        try {
-            return renderToTextureInternal(width, height, callback)
-        } finally {
-            renderingToTexture = oldRendering
-            backWidth = oldWidth
-            backHeight = oldHeight
-        }
-    }
+	var renderingToTexture = false
 
-    inline fun renderToTextureInternal(width: Int, height: Int, callback: () -> Unit): RenderTexture {
-        val rb = renderBuffers.obtain()
-        frameRenderBuffers += rb
-        val oldRendering = renderingToTexture
-        renderingToTexture = true
+	inline fun renderToTexture(width: Int, height: Int, callback: () -> Unit): RenderTexture {
+		val oldRendering = renderingToTexture
+		val oldWidth = backWidth
+		val oldHeight = backHeight
+		renderingToTexture = true
+		backWidth = width
+		backHeight = height
+		try {
+			return renderToTextureInternal(width, height, callback)
+		} finally {
+			renderingToTexture = oldRendering
+			backWidth = oldWidth
+			backHeight = oldHeight
+		}
+	}
 
-        rb.start(width, height)
-        clear()
-        try {
-            callback()
-        } finally {
-            rb.end()
-            renderingToTexture = oldRendering
-        }
-        return RenderTexture(rb.tex, width, height)
-    }
+	inline fun renderToTextureInternal(width: Int, height: Int, callback: () -> Unit): RenderTexture {
+		val rb = renderBuffers.obtain()
+		frameRenderBuffers += rb
+		val oldRendering = renderingToTexture
+		renderingToTexture = true
 
-    inline fun renderToBitmap(bmp: Bitmap32, callback: () -> Unit) {
-        val rb = renderBuffers.obtain()
-        frameRenderBuffers += rb
-        val oldRendering = renderingToTexture
-        renderingToTexture = true
+		rb.start(width, height)
+		clear()
+		try {
+			callback()
+		} finally {
+			rb.end()
+			renderingToTexture = oldRendering
+		}
+		return RenderTexture(rb.tex, width, height)
+	}
 
-        rb.start(bmp.width, bmp.height)
-        clear()
-        try {
-            callback()
-        } finally {
-            rb.readBitmap(bmp)
-            rb.end()
-            renderingToTexture = oldRendering
-        }
-    }
+	inline fun renderToBitmap(bmp: Bitmap32, callback: () -> Unit) {
+		val rb = renderBuffers.obtain()
+		frameRenderBuffers += rb
+		val oldRendering = renderingToTexture
+		renderingToTexture = true
+
+		rb.start(bmp.width, bmp.height)
+		clear()
+		try {
+			callback()
+		} finally {
+			rb.readBitmap(bmp)
+			rb.end()
+			renderingToTexture = oldRendering
+		}
+	}
 }
