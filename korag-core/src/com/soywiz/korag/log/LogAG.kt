@@ -54,7 +54,7 @@ open class LogAG(
 		override fun toString(): String = "Buffer[$id]"
 	}
 
-	inner class LogRenderBuffer(val id: Int, ag: LogAG) : RenderBuffer(ag) {
+	inner class LogRenderBuffer(val id: Int) : RenderBuffer() {
 		override fun start(width: Int, height: Int) = log("$this.start($width, $height)")
 		override fun end() = log("$this.end()")
 		override fun readBitmap(bmp: Bitmap32) = log("$this.readBitmap($bmp)")
@@ -114,6 +114,6 @@ open class LogAG(
 	}
 
 	override fun disposeTemporalPerFrameStuff() = log("disposeTemporalPerFrameStuff()")
-	override fun createRenderBuffer(): RenderBuffer = LogRenderBuffer(renderBufferId++, this).apply { log("createRenderBuffer():$id") }
+	override fun createRenderBuffer(): RenderBuffer = LogRenderBuffer(renderBufferId++).apply { log("createRenderBuffer():$id") }
 	override fun flipInternal() = log("flipInternal()")
 }

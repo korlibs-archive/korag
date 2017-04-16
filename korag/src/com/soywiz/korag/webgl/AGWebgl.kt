@@ -308,7 +308,7 @@ class AGWebgl : AG() {
 	override fun flipInternal() {
 	}
 
-	inner class WebglRenderBuffer() : RenderBuffer(this) {
+	inner class WebglRenderBuffer() : RenderBuffer() {
 		val wtex = tex as WebglTexture
 
 		val renderbuffer = gl.call("createRenderbuffer")

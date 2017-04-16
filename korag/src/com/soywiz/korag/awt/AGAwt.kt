@@ -22,6 +22,7 @@ import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.util.Once
 import java.io.Closeable
 import java.nio.ByteBuffer
+import java.nio.IntBuffer
 
 class AGFactoryAwt : AGFactory() {
 	override val priority = 500
@@ -76,6 +77,64 @@ abstract class AGAwtBase : AG() {
 	//val queue = LinkedList<(gl: GL) -> Unit>()
 
 	override fun createBuffer(kind: Buffer.Kind): Buffer = AwtBuffer(kind)
+
+	inner class AwtRenderBuffer : RenderBuffer() {
+		val wtex = tex as AwtTexture
+
+		val renderbuffer = IntBuffer.allocate(1)
+		val framebuffer = IntBuffer.allocate(1)
+		var oldViewport = IntArray(4)
+
+		init {
+			gl.glGenRenderbuffers(1, renderbuffer)
+			gl.glGenFramebuffers(1, framebuffer)
+		}
+
+		override fun start(width: Int, height: Int) {
+			//gl.getparameter
+			gl.glGetIntegerv(GL.GL_VIEWPORT, oldViewport, 0)
+			//println("oldViewport:${oldViewport.toList()}")
+
+			gl.glBindTexture(GL.GL_TEXTURE_2D, wtex.tex)
+			gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_LINEAR)
+			gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_LINEAR)
+
+			//gl.glTexImage2D(GL.GL_TEXTURE_2D, 0, GL.GL_RGBA, width, height, 0, GL.GL_RGBA, GL.GL_UNSIGNED_BYTE, ByteBuffer.allocate(width * height * 4))
+			gl.glTexImage2D(GL.GL_TEXTURE_2D, 0, GL.GL_RGBA, width, height, 0, GL.GL_RGBA, GL.GL_UNSIGNED_BYTE, null)
+			gl.glBindTexture(GL.GL_TEXTURE_2D, 0)
+
+			gl.glBindRenderbuffer(GL.GL_RENDERBUFFER, renderbuffer[0])
+			gl.glBindFramebuffer(GL.GL_FRAMEBUFFER, framebuffer[0])
+
+			gl.glFramebufferTexture2D(GL.GL_FRAMEBUFFER, GL.GL_COLOR_ATTACHMENT0, GL.GL_TEXTURE_2D, wtex.tex, 0)
+			gl.glRenderbufferStorage(GL.GL_RENDERBUFFER, GL.GL_DEPTH_COMPONENT16, width, height)
+			gl.glFramebufferRenderbuffer(GL.GL_FRAMEBUFFER, GL.GL_DEPTH_ATTACHMENT, GL.GL_RENDERBUFFER, renderbuffer[0])
+
+			gl.glViewport(0, 0, width, height)
+		}
+
+		override fun end() {
+			gl.glFlush()
+			gl.glBindTexture(GL.GL_TEXTURE_2D, 0)
+			gl.glBindRenderbuffer(GL.GL_RENDERBUFFER, 0)
+			gl.glBindFramebuffer(GL.GL_FRAMEBUFFER, 0)
+			gl.glViewport(oldViewport[0], oldViewport[1], oldViewport[2], oldViewport[3])
+		}
+
+		override fun readBitmap(bmp: Bitmap32) {
+			gl.glReadPixels(0, 0, bmp.width, bmp.height, GL.GL_RGBA, GL.GL_UNSIGNED_BYTE, IntBuffer.wrap(bmp.data))
+
+			//val ibuffer = JTranscArrays.nativeReinterpretAsInt(data.data)
+			//for (n in 0 until bmp.area) bmp.data[n] = RGBA.rgbaToBgra(ibuffer[n])
+		}
+
+		override fun close() {
+			gl.glDeleteFramebuffers(1, framebuffer)
+			gl.glDeleteRenderbuffers(1, renderbuffer)
+		}
+	}
+
+	override fun createRenderBuffer(): RenderBuffer = AwtRenderBuffer()
 
 	override fun draw(vertices: Buffer, indices: Buffer, program: Program, type: DrawType, vertexLayout: VertexLayout, vertexCount: Int, offset: Int, blending: BlendMode, uniforms: Map<Uniform, Any>) {
 		checkBuffers(vertices, indices)
@@ -210,6 +269,7 @@ abstract class AGAwtBase : AG() {
 	}
 
 	override fun clear(color: Int, depth: Float, stencil: Int, clearColor: Boolean, clearDepth: Boolean, clearStencil: Boolean) {
+		//println("CLEAR: $color, $depth")
 		val r = RGBA.getRf(color)
 		val g = RGBA.getGf(color)
 		val b = RGBA.getBf(color)

@@ -8,6 +8,7 @@ import com.soywiz.korim.bitmap.Bitmap
 import com.soywiz.korim.bitmap.Bitmap32
 import com.soywiz.korim.bitmap.Bitmap8
 import com.soywiz.korim.bitmap.NativeImage
+import com.soywiz.korim.color.Colors
 import com.soywiz.korim.color.RGBA
 import com.soywiz.korio.async.Promise
 import com.soywiz.korio.async.Signal
@@ -240,8 +241,8 @@ abstract class AG : Extra by Extra.Mixin() {
 	val frameRenderBuffers = java.util.ArrayList<RenderBuffer>()
 	val renderBuffers = Pool<RenderBuffer>() { createRenderBuffer() }
 
-	open class RenderBuffer(val ag: AG) : Closeable {
-		val tex = ag.createTexture()
+	open inner class RenderBuffer : Closeable {
+		val tex = this@AG.createTexture()
 
 		open fun start(width: Int, height: Int) = Unit
 		open fun end() = Unit
@@ -249,7 +250,7 @@ abstract class AG : Extra by Extra.Mixin() {
 		override fun close() = Unit
 	}
 
-	open protected fun createRenderBuffer() = RenderBuffer(this)
+	open protected fun createRenderBuffer() = RenderBuffer()
 
 	fun flip() {
 		disposeTemporalPerFrameStuff()
@@ -260,7 +261,7 @@ abstract class AG : Extra by Extra.Mixin() {
 
 	protected open fun flipInternal() = Unit
 
-	open fun clear(color: Int = RGBA(0, 0, 0, 0xFF), depth: Float = 0f, stencil: Int = 0, clearColor: Boolean = true, clearDepth: Boolean = true, clearStencil: Boolean = true) = Unit
+	open fun clear(color: Int = Colors.TRANSPARENT_BLACK, depth: Float = 0f, stencil: Int = 0, clearColor: Boolean = true, clearDepth: Boolean = true, clearStencil: Boolean = true) = Unit
 
 	class RenderTexture(val tex: Texture, val width: Int, val height: Int)
 
@@ -289,8 +290,8 @@ abstract class AG : Extra by Extra.Mixin() {
 		renderingToTexture = true
 
 		rb.start(width, height)
-		clear()
 		try {
+			clear(0) // transparent
 			callback()
 		} finally {
 			rb.end()
@@ -306,8 +307,8 @@ abstract class AG : Extra by Extra.Mixin() {
 		renderingToTexture = true
 
 		rb.start(bmp.width, bmp.height)
-		clear()
 		try {
+			clear(0)
 			callback()
 		} finally {
 			rb.readBitmap(bmp)
