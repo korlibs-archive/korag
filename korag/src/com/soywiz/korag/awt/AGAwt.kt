@@ -4,10 +4,7 @@ import com.jogamp.newt.opengl.GLWindow
 import com.jogamp.opengl.*
 import com.jogamp.opengl.awt.GLCanvas
 import com.jtransc.FastMemory
-import com.soywiz.korag.AG
-import com.soywiz.korag.AGFactory
-import com.soywiz.korag.AGWindow
-import com.soywiz.korag.BlendMode
+import com.soywiz.korag.*
 import com.soywiz.korag.geom.Matrix4
 import com.soywiz.korag.shader.Program
 import com.soywiz.korag.shader.Uniform
@@ -49,6 +46,8 @@ class AGFactoryAwt : AGFactory() {
 			override val onMouseOver: Signal<Unit> = Signal()
 			override val onMouseUp: Signal<Unit> = Signal()
 			override val onMouseDown: Signal<Unit> = Signal()
+			//override val onResized: Signal<Unit> = Signal()
+
 			override fun repaint() = Unit
 			override val ag: AG = AGAwtNative(window)
 		}
@@ -435,6 +434,9 @@ class AGAwt : AGAwtBase() {
 		//}
 	}
 
+	override fun resized() {
+		onResized(Unit)
+	}
 
 	init {
 		//((glcanvas as JoglNewtAwtCanvas).getNativeWindow() as JAWTWindow).setSurfaceScale(new float[] {2, 2});

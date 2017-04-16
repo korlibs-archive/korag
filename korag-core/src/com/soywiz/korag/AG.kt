@@ -9,7 +9,6 @@ import com.soywiz.korim.bitmap.Bitmap32
 import com.soywiz.korim.bitmap.Bitmap8
 import com.soywiz.korim.bitmap.NativeImage
 import com.soywiz.korim.color.Colors
-import com.soywiz.korim.color.RGBA
 import com.soywiz.korio.async.Promise
 import com.soywiz.korio.async.Signal
 import com.soywiz.korio.error.invalidOp
@@ -44,6 +43,13 @@ interface AGContainer {
 	val onMouseUp: Signal<Unit>
 	val onMouseDown: Signal<Unit>
 
+	//data class Resized(var width: Int, var height: Int) {
+	//	fun setSize(width: Int, height: Int): Resized = this.apply {
+	//		this.width = width
+	//		this.height = height
+	//	}
+	//}
+
 	fun repaint(): Unit
 }
 
@@ -67,11 +73,13 @@ abstract class AG : Extra by Extra.Mixin() {
 
 	val onReady = onReadyDeferred.promise
 	val onRender = Signal<AG>()
+	val onResized = Signal<Unit>()
 
 	open fun repaint() {
 	}
 
 	open fun resized() {
+		onResized(Unit)
 	}
 
 	open fun dispose() {

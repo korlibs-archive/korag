@@ -34,7 +34,10 @@ open class LogAG(
 
 	override fun repaint() = log("repaint()")
 
-	override fun resized() = log("resized()")
+	override fun resized() {
+		log("resized()")
+		onResized(Unit)
+	}
 
 	override fun dispose() = log("dispose()")
 

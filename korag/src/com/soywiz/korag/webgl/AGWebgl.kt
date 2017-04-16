@@ -48,6 +48,7 @@ class AGWebgl : AG() {
 		backWidth = canvas["width"].toInt()
 		backHeight = canvas["height"].toInt()
 		gl.call("viewport", 0, 0, canvas["width"], canvas["height"])
+		onResized(Unit)
 	}
 
 	override fun dispose() {
