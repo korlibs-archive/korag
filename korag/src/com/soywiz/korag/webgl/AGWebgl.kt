@@ -6,7 +6,6 @@ import com.jtransc.io.JTranscConsole
 import com.jtransc.js.*
 import com.soywiz.korag.AG
 import com.soywiz.korag.AGFactory
-import com.soywiz.korag.BlendMode
 import com.soywiz.korag.geom.Matrix4
 import com.soywiz.korag.shader.Program
 import com.soywiz.korag.shader.Uniform
@@ -226,7 +225,20 @@ class AGWebgl : AG() {
 		DrawType.TRIANGLE_STRIP -> gl["TRIANGLE_STRIP"].toInt()
 	}
 
-	override fun draw(vertices: Buffer, indices: Buffer, program: Program, type: DrawType, vertexLayout: VertexLayout, vertexCount: Int, offset: Int, blending: BlendMode, uniforms: Map<Uniform, Any>) {
+	private fun BlendFactor.toGl(): Int = when (this) {
+		BlendFactor.DESTINATION_ALPHA -> gl["DST_ALPHA"].toInt()
+		BlendFactor.DESTINATION_COLOR -> gl["DST_COLOR"].toInt()
+		BlendFactor.ONE -> gl["ONE"].toInt()
+		BlendFactor.ONE_MINUS_DESTINATION_ALPHA -> gl["ONE_MINUS_DST_ALPHA"].toInt()
+		BlendFactor.ONE_MINUS_DESTINATION_COLOR -> gl["ONE_MINUS_DST_COLOR"].toInt()
+		BlendFactor.ONE_MINUS_SOURCE_ALPHA -> gl["ONE_MINUS_SRC_ALPHA"].toInt()
+		BlendFactor.ONE_MINUS_SOURCE_COLOR -> gl["ONE_MINUS_SRC_COLOR"].toInt()
+		BlendFactor.SOURCE_ALPHA -> gl["SRC_ALPHA"].toInt()
+		BlendFactor.SOURCE_COLOR -> gl["SRC_COLOR"].toInt()
+		BlendFactor.ZERO -> gl["ZERO"].toInt()
+	}
+
+	override fun draw(vertices: Buffer, indices: Buffer, program: Program, type: DrawType, vertexLayout: VertexLayout, vertexCount: Int, offset: Int, blending: BlendFactors, uniforms: Map<Uniform, Any>) {
 		checkBuffers(vertices, indices)
 		val glProgram = getProgram(program)
 		(vertices as WebglBuffer).bind()
@@ -268,15 +280,11 @@ class AGWebgl : AG() {
 			}
 		}
 
-		when (blending) {
-			BlendMode.NONE -> {
-				gl.call("disable", gl["BLEND"])
-			}
-			BlendMode.OVERLAY -> {
-				gl.call("enable", gl["BLEND"])
-				gl.call("blendFuncSeparate", gl["SRC_ALPHA"], gl["ONE_MINUS_SRC_ALPHA"], gl["ONE"], gl["ONE_MINUS_SRC_ALPHA"])
-			}
-			else -> Unit
+		if (blending.disabled) {
+			gl.call("disable", gl["BLEND"])
+		} else {
+			gl.call("enable", gl["BLEND"])
+			gl.call("blendFuncSeparate", blending.srcRGB.toGl(), blending.dstRGB.toGl(), blending.srcA.toGl(), blending.dstA.toGl())
 		}
 
 		//gl["drawArrays"](type.glDrawMode, 0, 3)

@@ -5,7 +5,6 @@ import android.opengl.GLSurfaceView
 import com.jtransc.FastMemory
 import com.soywiz.korag.AG
 import com.soywiz.korag.AGFactory
-import com.soywiz.korag.BlendMode
 import com.soywiz.korag.geom.Matrix4
 import com.soywiz.korag.shader.Program
 import com.soywiz.korag.shader.Uniform
@@ -102,7 +101,20 @@ class AGAndroid : AG() {
 
 	override fun createBuffer(kind: Buffer.Kind): Buffer = AndroidBuffer(kind)
 
-	override fun draw(vertices: Buffer, indices: Buffer, program: Program, type: DrawType, vertexLayout: VertexLayout, vertexCount: Int, offset: Int, blending: BlendMode, uniforms: Map<Uniform, Any>) {
+	private fun BlendFactor.toGl() = when (this) {
+		BlendFactor.DESTINATION_ALPHA -> GL.GL_DST_ALPHA
+		BlendFactor.DESTINATION_COLOR -> GL.GL_DST_COLOR
+		BlendFactor.ONE -> GL.GL_ONE
+		BlendFactor.ONE_MINUS_DESTINATION_ALPHA -> GL.GL_ONE_MINUS_DST_ALPHA
+		BlendFactor.ONE_MINUS_DESTINATION_COLOR -> GL.GL_ONE_MINUS_DST_COLOR
+		BlendFactor.ONE_MINUS_SOURCE_ALPHA -> GL.GL_ONE_MINUS_SRC_ALPHA
+		BlendFactor.ONE_MINUS_SOURCE_COLOR -> GL.GL_ONE_MINUS_SRC_COLOR
+		BlendFactor.SOURCE_ALPHA -> GL.GL_SRC_ALPHA
+		BlendFactor.SOURCE_COLOR -> GL.GL_SRC_COLOR
+		BlendFactor.ZERO -> GL.GL_ZERO
+	}
+
+	override fun draw(vertices: Buffer, indices: Buffer, program: Program, type: DrawType, vertexLayout: VertexLayout, vertexCount: Int, offset: Int, blending: BlendFactors, uniforms: Map<Uniform, Any>) {
 		checkBuffers(vertices, indices)
 		val glProgram = getProgram(program)
 		(vertices as AndroidBuffer).bind()
@@ -144,15 +156,11 @@ class AGAndroid : AG() {
 			}
 		}
 
-		when (blending) {
-			BlendMode.NONE -> {
-				gl.glDisable(GL.GL_BLEND)
-			}
-			BlendMode.OVERLAY -> {
-				gl.glEnable(GL.GL_BLEND)
-				gl.glBlendFuncSeparate(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA, GL.GL_ONE, GL.GL_ONE_MINUS_SRC_ALPHA)
-			}
-			else -> Unit
+		if (blending.disabled) {
+			gl.glDisable(GL.GL_BLEND)
+		} else {
+			gl.glEnable(GL.GL_BLEND)
+			gl.glBlendFuncSeparate(blending.srcRGB.toGl(), blending.dstRGB.toGl(), blending.srcA.toGl(), blending.dstA.toGl())
 		}
 
 		gl.glDrawElements(type.glDrawMode, vertexCount, GL.GL_UNSIGNED_SHORT, offset)

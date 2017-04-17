@@ -85,6 +85,31 @@ abstract class AG : Extra by Extra.Mixin() {
 	open fun dispose() {
 	}
 
+	enum class BlendFactor {
+		DESTINATION_ALPHA,
+		DESTINATION_COLOR,
+		ONE,
+		ONE_MINUS_DESTINATION_ALPHA,
+		ONE_MINUS_DESTINATION_COLOR,
+		ONE_MINUS_SOURCE_ALPHA,
+		ONE_MINUS_SOURCE_COLOR,
+		SOURCE_ALPHA,
+		SOURCE_COLOR,
+		ZERO;
+	}
+
+	data class BlendFactors(val srcRGB: BlendFactor, val dstRGB: BlendFactor, val srcA: BlendFactor, val dstA: BlendFactor) {
+		val disabled: Boolean get() = srcRGB == BlendFactor.ONE && dstRGB == BlendFactor.ZERO && srcA == BlendFactor.ONE && dstA == BlendFactor.ZERO
+		val enabled: Boolean get() = !disabled
+
+		companion object {
+			// http://www.learnopengles.com/tag/additive-blending/
+			val DISABLED = BlendFactors(BlendFactor.ONE, BlendFactor.ZERO, BlendFactor.ONE, BlendFactor.ZERO)
+			val NORMAL = BlendFactors(BlendFactor.SOURCE_ALPHA, BlendFactor.ONE_MINUS_SOURCE_ALPHA, BlendFactor.ONE, BlendFactor.ONE_MINUS_SOURCE_ALPHA)
+			val ADD = BlendFactors(BlendFactor.ONE, BlendFactor.ONE, BlendFactor.ONE, BlendFactor.ONE)
+		}
+	}
+
 	open class Texture : Closeable {
 		var mipmaps = false
 
@@ -226,12 +251,12 @@ abstract class AG : Extra by Extra.Mixin() {
 		upload(data, offset, length)
 	}
 
-	open fun draw(vertices: Buffer, indices: Buffer, program: Program, type: DrawType, vertexLayout: VertexLayout, vertexCount: Int, offset: Int = 0, blending: BlendMode = BlendMode.OVERLAY, uniforms: Map<Uniform, Any> = mapOf()) {
+	open fun draw(vertices: Buffer, indices: Buffer, program: Program, type: DrawType, vertexLayout: VertexLayout, vertexCount: Int, offset: Int = 0, blending: BlendFactors = BlendFactors.NORMAL, uniforms: Map<Uniform, Any> = mapOf()) {
 		//VertexFormat()
 		//	.add("hello", VertexFormat.Element.Type.Byte4)
 	}
 
-	fun draw(vertices: Buffer, program: Program, type: DrawType, vertexLayout: VertexLayout, vertexCount: Int, offset: Int = 0, blending: BlendMode = BlendMode.OVERLAY, uniforms: Map<Uniform, Any> = mapOf()) {
+	fun draw(vertices: Buffer, program: Program, type: DrawType, vertexLayout: VertexLayout, vertexCount: Int, offset: Int = 0, blending: BlendFactors = BlendFactors.NORMAL, uniforms: Map<Uniform, Any> = mapOf()) {
 		createIndexBuffer((0 until vertexCount).map(Int::toShort).toShortArray()).use { indices ->
 			draw(vertices, indices, program, type, vertexLayout, vertexCount, offset, blending, uniforms)
 		}

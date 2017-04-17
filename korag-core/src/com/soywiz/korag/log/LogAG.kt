@@ -1,7 +1,6 @@
 package com.soywiz.korag.log
 
 import com.soywiz.korag.AG
-import com.soywiz.korag.BlendMode
 import com.soywiz.korag.shader.Program
 import com.soywiz.korag.shader.Uniform
 import com.soywiz.korag.shader.VarType
@@ -13,7 +12,7 @@ import java.nio.ByteBuffer
 open class LogAG(
 	width: Int = 640,
 	height: Int = 480
-): AG() {
+) : AG() {
 	val log = arrayListOf<String>()
 	override val nativeComponent: Any = Object()
 
@@ -72,7 +71,7 @@ open class LogAG(
 	override fun createTexture(): Texture = LogTexture(textureId++).apply { log("createTexture():$id") }
 
 	override fun createBuffer(kind: Buffer.Kind): Buffer = LogBuffer(bufferId++, kind).apply { log("createBuffer($kind):$id") }
-	override fun draw(vertices: Buffer, indices: Buffer, program: Program, type: DrawType, vertexLayout: VertexLayout, vertexCount: Int, offset: Int, blending: BlendMode, uniforms: Map<Uniform, Any>) {
+	override fun draw(vertices: Buffer, indices: Buffer, program: Program, type: DrawType, vertexLayout: VertexLayout, vertexCount: Int, offset: Int, blending: BlendFactors, uniforms: Map<Uniform, Any>) {
 		try {
 			log("draw(vertices=$vertices, indices=$indices, program=$program, type=$type, vertexLayout=$vertexLayout, vertexCount=$vertexCount, offset=$offset, blending=$blending, uniforms=$uniforms)")
 

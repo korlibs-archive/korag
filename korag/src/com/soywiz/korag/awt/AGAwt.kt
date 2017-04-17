@@ -4,7 +4,9 @@ import com.jogamp.newt.opengl.GLWindow
 import com.jogamp.opengl.*
 import com.jogamp.opengl.awt.GLCanvas
 import com.jtransc.FastMemory
-import com.soywiz.korag.*
+import com.soywiz.korag.AG
+import com.soywiz.korag.AGFactory
+import com.soywiz.korag.AGWindow
 import com.soywiz.korag.geom.Matrix4
 import com.soywiz.korag.shader.Program
 import com.soywiz.korag.shader.Uniform
@@ -135,7 +137,20 @@ abstract class AGAwtBase : AG() {
 
 	override fun createRenderBuffer(): RenderBuffer = AwtRenderBuffer()
 
-	override fun draw(vertices: Buffer, indices: Buffer, program: Program, type: DrawType, vertexLayout: VertexLayout, vertexCount: Int, offset: Int, blending: BlendMode, uniforms: Map<Uniform, Any>) {
+	private fun BlendFactor.toGl() = when (this) {
+		BlendFactor.DESTINATION_ALPHA -> GL.GL_DST_ALPHA
+		BlendFactor.DESTINATION_COLOR -> GL.GL_DST_COLOR
+		BlendFactor.ONE -> GL.GL_ONE
+		BlendFactor.ONE_MINUS_DESTINATION_ALPHA -> GL.GL_ONE_MINUS_DST_ALPHA
+		BlendFactor.ONE_MINUS_DESTINATION_COLOR -> GL.GL_ONE_MINUS_DST_COLOR
+		BlendFactor.ONE_MINUS_SOURCE_ALPHA -> GL.GL_ONE_MINUS_SRC_ALPHA
+		BlendFactor.ONE_MINUS_SOURCE_COLOR -> GL.GL_ONE_MINUS_SRC_COLOR
+		BlendFactor.SOURCE_ALPHA -> GL.GL_SRC_ALPHA
+		BlendFactor.SOURCE_COLOR -> GL.GL_SRC_COLOR
+		BlendFactor.ZERO -> GL.GL_ZERO
+	}
+
+	override fun draw(vertices: Buffer, indices: Buffer, program: Program, type: DrawType, vertexLayout: VertexLayout, vertexCount: Int, offset: Int, blending: BlendFactors, uniforms: Map<Uniform, Any>) {
 		checkBuffers(vertices, indices)
 		val glProgram = getProgram(program)
 		(vertices as AwtBuffer).bind(gl)
@@ -177,15 +192,11 @@ abstract class AGAwtBase : AG() {
 			}
 		}
 
-		when (blending) {
-			BlendMode.NONE -> {
-				checkErrors { gl.glDisable(GL2.GL_BLEND) }
-			}
-			BlendMode.OVERLAY -> {
-				checkErrors { gl.glEnable(GL2.GL_BLEND) }
-				checkErrors { gl.glBlendFuncSeparate(GL2.GL_SRC_ALPHA, GL2.GL_ONE_MINUS_SRC_ALPHA, GL2.GL_ONE, GL2.GL_ONE_MINUS_SRC_ALPHA) }
-			}
-			else -> Unit
+		if (blending.disabled) {
+			checkErrors { gl.glDisable(GL2.GL_BLEND) }
+		} else {
+			checkErrors { gl.glEnable(GL2.GL_BLEND) }
+			checkErrors { gl.glBlendFuncSeparate(blending.srcRGB.toGl(), blending.dstRGB.toGl(), blending.srcA.toGl(), blending.dstA.toGl()) }
 		}
 
 		checkErrors { gl.glDrawElements(type.glDrawMode, vertexCount, GL2.GL_UNSIGNED_SHORT, offset.toLong()) }
