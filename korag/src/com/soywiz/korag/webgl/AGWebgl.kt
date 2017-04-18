@@ -46,7 +46,7 @@ class AGWebgl : AG() {
 	override fun resized() {
 		backWidth = canvas["width"].toInt()
 		backHeight = canvas["height"].toInt()
-		gl.call("viewport", 0, 0, canvas["width"], canvas["height"])
+		gl.call("viewport", 0, 0, backWidth, backHeight)
 		onResized(Unit)
 	}
 
