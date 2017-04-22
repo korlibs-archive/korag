@@ -168,25 +168,18 @@ abstract class AG : Extra by Extra.Mixin() {
 		enum class Kind { INDEX, VERTEX }
 
 		var dirty = false
-		protected var mem: FastMemory = FastMemory.alloc(0)
+		protected var mem: FastMemory? = null
+		protected var memOffset: Int = 0
+		protected var memLength: Int = 0
 
 		open fun afterSetMem() {
 		}
 
-		fun upload(data: ByteBuffer, offset: Int = 0, length: Int = data.limit()): Buffer {
-			// @TODO: Optimize this
-			mem = FastMemory.alloc(length)
-			for (n in 0 until length) {
-				mem.setInt8(n, data.get(offset + n).toInt())
-			}
-			dirty = true
-			afterSetMem()
-			return this
-		}
-
 		fun upload(data: ByteArray, offset: Int = 0, length: Int = data.size): Buffer {
 			mem = FastMemory.alloc(length)
-			mem.setArrayInt8(0, data, offset, length)
+			FastMemory.copy(data, offset, mem!!, 0, length)
+			memOffset = 0
+			memLength = length
 			dirty = true
 			afterSetMem()
 			return this
@@ -194,7 +187,9 @@ abstract class AG : Extra by Extra.Mixin() {
 
 		fun upload(data: FloatArray, offset: Int = 0, length: Int = data.size): Buffer {
 			mem = FastMemory.alloc(length * 4)
-			mem.setArrayFloat32(0, data, offset, length)
+			mem!!.setArrayFloat32(0, data, offset, length)
+			memOffset = 0
+			memLength = length * 4
 			dirty = true
 			afterSetMem()
 			return this
@@ -202,7 +197,9 @@ abstract class AG : Extra by Extra.Mixin() {
 
 		fun upload(data: IntArray, offset: Int = 0, length: Int = data.size): Buffer {
 			mem = FastMemory.alloc(length * 4)
-			mem.setArrayInt32(0, data, offset, length)
+			mem!!.setArrayInt32(0, data, offset, length)
+			memOffset = 0
+			memLength = length * 4
 			dirty = true
 			afterSetMem()
 			return this
@@ -210,22 +207,28 @@ abstract class AG : Extra by Extra.Mixin() {
 
 		fun upload(data: ShortArray, offset: Int = 0, length: Int = data.size): Buffer {
 			mem = FastMemory.alloc(length * 2)
-			mem.setArrayInt16(0, data, offset, length)
+			mem!!.setArrayInt16(0, data, offset, length)
+			memOffset = 0
+			memLength = length * 2
 			dirty = true
 			afterSetMem()
 			return this
-
 		}
 
 		fun upload(data: FastMemory, offset: Int = 0, length: Int = data.length): Buffer {
-			mem = FastMemory.alloc(length)
-			FastMemory.copy(data, offset, mem, 0, length)
+			mem = data
+			memOffset = offset
+			memLength = length
 			dirty = true
 			afterSetMem()
 			return this
 		}
 
 		override fun close() {
+			mem = null
+			memOffset = 0
+			memLength = 0
+			dirty = true
 		}
 	}
 
@@ -242,6 +245,10 @@ abstract class AG : Extra by Extra.Mixin() {
 	fun createVertexBuffer() = createBuffer(Buffer.Kind.VERTEX)
 
 	fun createIndexBuffer(data: ShortArray, offset: Int = 0, length: Int = data.size - offset) = createIndexBuffer().apply {
+		upload(data, offset, length)
+	}
+
+	fun createIndexBuffer(data: FastMemory, offset: Int = 0, length: Int = data.length - offset) = createIndexBuffer().apply {
 		upload(data, offset, length)
 	}
 

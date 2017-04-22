@@ -51,7 +51,9 @@ open class LogAG(
 
 	inner class LogBuffer(val id: Int, kind: Kind) : Buffer(kind) {
 		val logmem get() = mem
-		override fun afterSetMem() = log("$this.afterSetMem(mem[${mem.length}])")
+		val logmemOffset get() = memOffset
+		val logmemLEngth get() = memLength
+		override fun afterSetMem() = log("$this.afterSetMem(mem[${mem?.length}])")
 		override fun close() = log("$this.close()")
 		override fun toString(): String = "Buffer[$id]"
 	}
@@ -87,21 +89,22 @@ open class LogAG(
 			if (extraAttributes.isNotEmpty()) log("::draw.ERROR.Unexpected:$extraAttributes")
 
 			val vertexMem = (vertices as LogBuffer).logmem
+			val vertexMemOffset = (vertices as LogBuffer).logmemOffset
 			val indexMem = (indices as LogBuffer).logmem
-			val indices = (offset until offset + vertexCount).map { indexMem.getAlignedInt16(it) }
+			val indices = (offset until offset + vertexCount).map { indexMem?.getAlignedInt16(it) ?: 0 }
 			log("::draw.indices=$indices")
 			for (index in indices.sorted().distinct()) {
 				val os = index * vertexLayout.totalSize
 				val attributes = arrayListOf<String>()
 				for ((attribute, pos) in vertexLayout.attributes.zip(vertexLayout.attributePositions)) {
-					val o = os + pos
+					val o = os + pos + vertexMemOffset
 
 					val info = when (attribute.type) {
-						VarType.Int1 -> "int(" + vertexMem.getInt32(o + 0) + ")"
-						VarType.Float1 -> "float(" + vertexMem.getFloat32(o + 0) + ")"
-						VarType.Float2 -> "vec2(" + vertexMem.getFloat32(o + 0) + "," + vertexMem.getFloat32(o + 4) + ")"
-						VarType.Float3 -> "vec2(" + vertexMem.getFloat32(o + 0) + "," + vertexMem.getFloat32(o + 4) + "," + vertexMem.getFloat32(o + 8) + ")"
-						VarType.Byte4 -> "byte4(" + vertexMem.getInt32(o + 0) + ")"
+						VarType.Int1 -> "int(" + vertexMem?.getInt32(o + 0) + ")"
+						VarType.Float1 -> "float(" + vertexMem?.getFloat32(o + 0) + ")"
+						VarType.Float2 -> "vec2(" + vertexMem?.getFloat32(o + 0) + "," + vertexMem?.getFloat32(o + 4) + ")"
+						VarType.Float3 -> "vec2(" + vertexMem?.getFloat32(o + 0) + "," + vertexMem?.getFloat32(o + 4) + "," + vertexMem?.getFloat32(o + 8) + ")"
+						VarType.Byte4 -> "byte4(" + vertexMem?.getInt32(o + 0) + ")"
 						else -> "Unsupported(${attribute.type})"
 					}
 

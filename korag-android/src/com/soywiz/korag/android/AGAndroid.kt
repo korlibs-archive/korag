@@ -257,8 +257,16 @@ class AGAndroid : AG() {
 			}
 			if (dirty) {
 				_bind(id)
-				//println("Setting buffer($kind): ${mem.byteBufferOrNull}")
-				gl.glBufferData(glKind, mem.length, mem.byteBufferOrNull, GL.GL_STATIC_DRAW)
+				if (mem != null) {
+					val bb = mem!!.byteBufferOrNull
+					if (bb != null) {
+						val pos = bb.position()
+						bb.position(memOffset)
+						//println("Setting buffer($kind): ${mem.byteBufferOrNull}")
+						gl.glBufferData(glKind, memLength, bb, GL.GL_STATIC_DRAW)
+						bb.position(pos)
+					}
+				}
 			}
 			return id
 		}

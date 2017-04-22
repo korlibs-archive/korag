@@ -315,7 +315,13 @@ abstract class AGAwtBase : AG() {
 			}
 			if (dirty) {
 				_bind(gl, id)
-				checkErrors { gl.glBufferData(glKind, mem.length.toLong(), mem.byteBufferOrNull, GL.GL_STATIC_DRAW) }
+				if (mem != null) {
+					val bb = mem!!.byteBufferOrNull
+					val old = bb.position()
+					bb.position(memOffset)
+					checkErrors { gl.glBufferData(glKind, memLength.toLong(), bb, GL.GL_STATIC_DRAW) }
+					bb.position(old)
+				}
 			}
 			return id
 		}

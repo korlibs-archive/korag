@@ -192,11 +192,13 @@ class AGWebgl : AG() {
 
 		override fun afterSetMem() {
 			bind()
-			val buffer = mem.asJsDynamic()["buffer"]
-			val typedArray = jsNew("Int8Array", buffer, 0, mem.length)
-			//console.methods["log"](target)
-			//console.methods["log"](typedArray)
-			gl.call("bufferData", this.target, typedArray, gl["STATIC_DRAW"])
+			if (mem != null) {
+				val buffer = mem.asJsDynamic()["buffer"]
+				val typedArray = jsNew("Int8Array", buffer, memOffset, memLength)
+				//console.methods["log"](target)
+				//console.methods["log"](typedArray)
+				gl.call("bufferData", this.target, typedArray, gl["STATIC_DRAW"])
+			}
 		}
 
 		override fun close() {
