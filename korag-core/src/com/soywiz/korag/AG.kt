@@ -99,12 +99,14 @@ abstract class AG : Extra by Extra.Mixin() {
 	}
 
 	data class BlendFactors(val srcRGB: BlendFactor, val dstRGB: BlendFactor, val srcA: BlendFactor, val dstA: BlendFactor) {
+		constructor(src: BlendFactor, dst: BlendFactor) : this(src, dst, src, dst)
+
 		val disabled: Boolean get() = srcRGB == BlendFactor.ONE && dstRGB == BlendFactor.ZERO && srcA == BlendFactor.ONE && dstA == BlendFactor.ZERO
 		val enabled: Boolean get() = !disabled
 
 		companion object {
 			// http://www.learnopengles.com/tag/additive-blending/
-			val DISABLED = BlendFactors(BlendFactor.ONE, BlendFactor.ZERO, BlendFactor.ONE, BlendFactor.ZERO)
+			val REPLACE = BlendFactors(BlendFactor.ONE, BlendFactor.ZERO, BlendFactor.ONE, BlendFactor.ZERO)
 			val NORMAL = BlendFactors(BlendFactor.SOURCE_ALPHA, BlendFactor.ONE_MINUS_SOURCE_ALPHA, BlendFactor.ONE, BlendFactor.ONE_MINUS_SOURCE_ALPHA)
 			val ADD = BlendFactors(BlendFactor.ONE, BlendFactor.ONE, BlendFactor.ONE, BlendFactor.ONE)
 		}
@@ -317,7 +319,7 @@ abstract class AG : Extra by Extra.Mixin() {
 	}
 
 	inline fun renderToTextureInternal(width: Int, height: Int, callback: () -> Unit): RenderTexture {
-		val rb = renderBuffers.obtain()
+		val rb = renderBuffers.alloc()
 		frameRenderBuffers += rb
 		val oldRendering = renderingToTexture
 		renderingToTexture = true
@@ -334,7 +336,7 @@ abstract class AG : Extra by Extra.Mixin() {
 	}
 
 	inline fun renderToBitmap(bmp: Bitmap32, callback: () -> Unit) {
-		val rb = renderBuffers.obtain()
+		val rb = renderBuffers.alloc()
 		frameRenderBuffers += rb
 		val oldRendering = renderingToTexture
 		renderingToTexture = true
