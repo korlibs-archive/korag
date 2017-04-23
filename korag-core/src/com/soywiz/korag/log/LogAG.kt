@@ -42,9 +42,10 @@ open class LogAG(
 
 	inner class LogTexture(val id: Int) : Texture() {
 		override fun createMipmaps(): Boolean = true.also { log("$this.createMipmaps()") }
-		override fun uploadBuffer(data: ByteBuffer, width: Int, height: Int, kind: Kind) = log("$this.uploadBuffer($data, $width, $height, $kind)")
-		override fun uploadBitmap32(bmp: Bitmap32) = log("$this.uploadBitmap32($bmp)")
-		override fun uploadBitmap8(bmp: Bitmap8) = log("$this.uploadBitmap8($bmp)")
+		override fun uploadedSource() {
+			log("$this.uploadedBitmap($source, ${source.width}, ${source.height})")
+		}
+
 		override fun close() = log("$this.close()")
 		override fun toString(): String = "Texture[$id]"
 	}

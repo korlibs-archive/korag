@@ -12,6 +12,7 @@ import com.soywiz.korag.shader.Uniform
 import com.soywiz.korag.shader.VarType
 import com.soywiz.korag.shader.VertexLayout
 import com.soywiz.korag.shader.gl.toGlSlString
+import com.soywiz.korim.bitmap.Bitmap
 import com.soywiz.korim.bitmap.Bitmap32
 import com.soywiz.korim.bitmap.Bitmap8
 import com.soywiz.korim.bitmap.NativeImage
@@ -127,35 +128,30 @@ class AGWebgl : AG() {
 			return false
 		}
 
-		fun uploadBuffer(data: Any, width: Int, height: Int, rgba: Boolean) {
-			val Bpp = if (rgba) 4 else 1
-			val rdata = jsNew("Uint8Array", data.asJsDynamic().call("getBuffer"), 0, width * height * Bpp)
-			val type = if (rgba) gl["RGBA"] else gl["LUMINANCE"]
-			bind()
-			//println("Uploading buffer! $width,$height")
-			gl.call("texImage2D", gl["TEXTURE_2D"], 0, type, width, height, 0, type, gl["UNSIGNED_BYTE"], rdata)
+		override fun actualSyncUpload(source: BitmapSourceBase, bmp: Bitmap?) {
+			when (bmp) {
+				null -> {
+				}
+				is CanvasNativeImage -> {
+					val type = gl["RGBA"]
+					//println("Uploading native image!")
+					gl.call("texImage2D", gl["TEXTURE_2D"], 0, type, type, gl["UNSIGNED_BYTE"], bmp.canvas)
+				}
+				is Bitmap32, is Bitmap8 -> {
+					val width = bmp.width
+					val height = bmp.height
+					val rgba = bmp is Bitmap32
+					val Bpp = if (rgba) 4 else 1
+					val data: Any = (bmp as? Bitmap32)?.data ?: ((bmp as? Bitmap8)?.data ?: ByteArray(width * height * Bpp))
+					val rdata = jsNew("Uint8Array", data.asJsDynamic().call("getBuffer"), 0, width * height * Bpp)
+					val type = if (rgba) gl["RGBA"] else gl["LUMINANCE"]
+					gl.call("texImage2D", gl["TEXTURE_2D"], 0, type, width, height, 0, type, gl["UNSIGNED_BYTE"], rdata)
+				}
+			}
 		}
 
-		// optimized upload version that doesn't require to get actual pixels
-		override fun uploadNativeImage(image: NativeImage) {
-			//void gl.texImage2D(target, level, internalformat, format, type, HTMLCanvasElement? pixels);
-
-			val canvasni = image as CanvasNativeImage
-			val canvas = canvasni.canvas
-
-			val type = gl["RGBA"]
-
-			bind()
-			//println("Uploading native image!")
-			gl.call("texImage2D", gl["TEXTURE_2D"], 0, type, type, gl["UNSIGNED_BYTE"], canvas)
-		}
-
-		override fun uploadBuffer(data: ByteBuffer, width: Int, height: Int, kind: Kind) = uploadBuffer(data.array(), width, height, kind == Kind.RGBA)
-		override fun uploadBitmap32(bmp: Bitmap32) = uploadBuffer(bmp.data, bmp.width, bmp.height, true)
-		override fun uploadBitmap8(bmp: Bitmap8) = uploadBuffer(bmp.data, bmp.width, bmp.height, false)
-
-		fun bind(): Unit = run { gl.call("bindTexture", gl["TEXTURE_2D"], tex) }
-		fun unbind(): Unit = run { gl.call("bindTexture", gl["TEXTURE_2D"], null) }
+		override fun bind(): Unit = run { gl.call("bindTexture", gl["TEXTURE_2D"], tex) }
+		override fun unbind(): Unit = run { gl.call("bindTexture", gl["TEXTURE_2D"], null) }
 
 		override fun close(): Unit = run { gl.call("deleteTexture", tex) }
 
@@ -267,7 +263,7 @@ class AGWebgl : AG() {
 					val unit = value as TextureUnit
 					gl.call("activeTexture", gl["TEXTURE0"].toInt() + textureUnit)
 					val tex = (unit.texture as WebglTexture?)
-					tex?.bind()
+					tex?.bindEnsuring()
 					tex?.setFilter(unit.linear)
 					gl.call("uniform1i", location, textureUnit)
 					textureUnit++

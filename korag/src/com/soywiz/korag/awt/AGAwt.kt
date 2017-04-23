@@ -13,11 +13,15 @@ import com.soywiz.korag.shader.Uniform
 import com.soywiz.korag.shader.VarType
 import com.soywiz.korag.shader.VertexLayout
 import com.soywiz.korag.shader.gl.toGlSlString
+import com.soywiz.korim.bitmap.Bitmap
 import com.soywiz.korim.bitmap.Bitmap32
 import com.soywiz.korim.bitmap.Bitmap8
+import com.soywiz.korim.bitmap.NativeImage
 import com.soywiz.korim.color.RGBA
 import com.soywiz.korio.async.Signal
+import com.soywiz.korio.async.async
 import com.soywiz.korio.error.invalidOp
+import com.soywiz.korio.error.unsupported
 import com.soywiz.korio.util.Once
 import java.io.Closeable
 import java.nio.ByteBuffer
@@ -345,34 +349,34 @@ abstract class AGAwtBase : AG() {
 
 		override fun createMipmaps(): Boolean = true
 
-		private var uploaded: Boolean = false
-		private var actualBuffer: ByteBuffer? = null
-		private var width: Int = 0
-		private var height: Int = 0
-		private var rgba: Boolean = false
-
-		fun uploadBuffer(data: FastMemory, width: Int, height: Int, rgba: Boolean) {
-			this.uploaded = true
-			this.actualBuffer = clone(data.byteBufferOrNull)
-			this.width = width
-			this.height = height
-			this.rgba = rgba
+		fun createBufferForBitmap(bmp: Bitmap?): ByteBuffer {
+			return when (bmp) {
+				null -> ByteBuffer.allocateDirect(0)
+				is NativeImage -> createBufferForBitmap(bmp.toBmp32())
+				is Bitmap8 -> {
+					val mem = FastMemory.alloc(bmp.area)
+					mem.setArrayInt8(0, bmp.data, 0, bmp.area)
+					return mem.byteBufferOrNull
+				}
+				is Bitmap32 -> {
+					val mem = FastMemory.alloc(bmp.area * 4)
+					mem.setArrayInt32(0, bmp.data, 0, bmp.area)
+					return mem.byteBufferOrNull
+				}
+				else -> unsupported()
+			}
 		}
 
-		fun bindEnsuring() {
-			bind()
-			if (uploaded) {
-				uploaded = false
-				val Bpp = if (rgba) 4 else 1
-				val type = if (rgba) GL2.GL_RGBA else GL2.GL_LUMINANCE
-				checkErrors {
-					gl.glTexImage2D(GL2.GL_TEXTURE_2D, 0, type, width, height, 0, type, GL2.GL_UNSIGNED_BYTE, actualBuffer)
-				}
-				if (mipmaps) {
-					setFilter(true)
-					setWrapST()
-					gl.glGenerateMipmap(GL.GL_TEXTURE_2D)
-				}
+		override fun actualSyncUpload(source: BitmapSourceBase, bmp: Bitmap?) {
+			val Bpp = if (source.rgba) 4 else 1
+			val type = if (source.rgba) GL2.GL_RGBA else GL2.GL_LUMINANCE
+			checkErrors {
+				gl.glTexImage2D(GL2.GL_TEXTURE_2D, 0, type, source.width, source.height, 0, type, GL2.GL_UNSIGNED_BYTE, createBufferForBitmap(bmp))
+			}
+			if (mipmaps) {
+				setFilter(true)
+				setWrapST()
+				gl.glGenerateMipmap(GL.GL_TEXTURE_2D)
 			}
 		}
 
@@ -385,24 +389,8 @@ abstract class AGAwtBase : AG() {
 			return clone
 		}
 
-		override fun uploadBuffer(data: ByteBuffer, width: Int, height: Int, kind: Kind) {
-			uploadBuffer(FastMemory.wrap(data), width, height, kind == Kind.RGBA)
-		}
-
-		override fun uploadBitmap32(bmp: Bitmap32) {
-			val mem = FastMemory.alloc(bmp.area * 4)
-			mem.setArrayInt32(0, bmp.data, 0, bmp.area)
-			uploadBuffer(mem, bmp.width, bmp.height, true)
-		}
-
-		override fun uploadBitmap8(bmp: Bitmap8) {
-			val mem = FastMemory.alloc(bmp.area)
-			mem.setArrayInt8(0, bmp.data, 0, bmp.area)
-			uploadBuffer(mem, bmp.width, bmp.height, false)
-		}
-
-		fun bind(): Unit = checkErrors { gl.glBindTexture(GL2.GL_TEXTURE_2D, tex) }
-		fun unbind(): Unit = checkErrors { gl.glBindTexture(GL2.GL_TEXTURE_2D, 0) }
+		override fun bind(): Unit = checkErrors { gl.glBindTexture(GL2.GL_TEXTURE_2D, tex) }
+		override fun unbind(): Unit = checkErrors { gl.glBindTexture(GL2.GL_TEXTURE_2D, 0) }
 
 		override fun close(): Unit = checkErrors { gl.glDeleteTextures(1, texIds, 0) }
 

@@ -6,18 +6,15 @@ import com.soywiz.korag.shader.Uniform
 import com.soywiz.korag.shader.VertexLayout
 import com.soywiz.korim.bitmap.Bitmap
 import com.soywiz.korim.bitmap.Bitmap32
-import com.soywiz.korim.bitmap.Bitmap8
-import com.soywiz.korim.bitmap.NativeImage
 import com.soywiz.korim.color.Colors
 import com.soywiz.korio.async.Promise
 import com.soywiz.korio.async.Signal
+import com.soywiz.korio.async.async
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.util.Extra
 import com.soywiz.korio.util.Pool
 import com.soywiz.korma.geom.Size
 import java.io.Closeable
-import java.nio.ByteBuffer
-import java.nio.ByteOrder
 import java.util.*
 
 val agFactory by lazy {
@@ -112,48 +109,89 @@ abstract class AG : Extra by Extra.Mixin() {
 		}
 	}
 
+	interface BitmapSourceBase {
+		val rgba: Boolean
+		val width: Int
+		val height: Int
+	}
+
+	class SyncBitmapSource(override val rgba: Boolean, override val width: Int, override val height: Int, val gen: () -> Bitmap?) : BitmapSourceBase {
+		companion object {
+			val NULL = SyncBitmapSource(true, 0, 0) { null }
+		}
+	}
+
+	class AsyncBitmapSource(override val rgba: Boolean, override val width: Int, override val height: Int, val gen: suspend () -> Bitmap?) : BitmapSourceBase {
+		companion object {
+			val NULL = AsyncBitmapSource(true, 0, 0) { null }
+		}
+	}
+
 	open class Texture : Closeable {
 		var mipmaps = false
+		var source: BitmapSourceBase = SyncBitmapSource.NULL
+		private var uploaded: Boolean = false
+		private var generating: Boolean = false
+		private var generated: Boolean = false
+		private var tempBitmap: Bitmap? = null
+		var ready: Boolean = false; private set
 
-		fun upload(bmp: Bitmap, mipmaps: Boolean = false): Texture {
-			when (bmp) {
-				is NativeImage -> uploadNativeImage(bmp)
-				is Bitmap8 -> uploadBitmap8(bmp)
-				is Bitmap32 -> uploadBitmap32(bmp)
-				else -> invalidOp("Unknown bitmap type: $bmp")
-			}
+		fun upload(bmp: Bitmap?, mipmaps: Boolean = false): Texture {
+			return upload(if (bmp != null) SyncBitmapSource(rgba = bmp.bpp > 8, width = bmp.width, height = bmp.height) { bmp } else SyncBitmapSource.NULL, mipmaps)
+		}
+
+		fun upload(source: BitmapSourceBase, mipmaps: Boolean = false): Texture = this.apply {
+			this.source = source
+			uploadedSource()
 			this.mipmaps = if (mipmaps) createMipmaps() else false
-			return this
+		}
+
+		open protected fun uploadedSource() {
+		}
+
+		open fun bind() {
+		}
+
+		open fun unbind() {
+		}
+
+		fun bindEnsuring() {
+			bind()
+			val source = this.source
+			if (!uploaded) {
+				if (!generating) {
+					generating = true
+					when (source) {
+						is SyncBitmapSource -> {
+							tempBitmap = source.gen()
+							generated = true
+						}
+						is AsyncBitmapSource -> {
+							async {
+								tempBitmap = source.gen()
+								generated = true
+							}
+						}
+					}
+				}
+
+				if (generated) {
+					uploaded = true
+					generating = false
+					generated = false
+					actualSyncUpload(source, tempBitmap)
+					tempBitmap = null
+					ready = true
+				}
+			}
+		}
+
+		open fun actualSyncUpload(source: BitmapSourceBase, bmp: Bitmap?) {
 		}
 
 		enum class Kind { RGBA, LUMINANCE }
 
 		open protected fun createMipmaps() = false
-
-		open fun uploadBuffer(data: ByteBuffer, width: Int, height: Int, kind: Kind) {
-		}
-
-		open fun uploadNativeImage(image: NativeImage) {
-			uploadBitmap32(image.toBmp32())
-		}
-
-		open fun uploadBitmap32(bmp: Bitmap32) {
-			val buffer = ByteBuffer.allocateDirect(bmp.area * 4).order(ByteOrder.nativeOrder())
-			val intBuffer = buffer.asIntBuffer()
-			//intBuffer.clear()
-			for (n in 0 until bmp.area) intBuffer.put(bmp.data[n])
-			//intBuffer.flip()
-			//buffer.limit(intBuffer.limit() * 4)
-			uploadBuffer(buffer, bmp.width, bmp.height, Kind.RGBA)
-		}
-
-		open fun uploadBitmap8(bmp: Bitmap8) {
-			val buffer = ByteBuffer.allocateDirect(bmp.area * 4).order(ByteOrder.nativeOrder())
-			//buffer.clear()
-			buffer.put(bmp.data)
-			//buffer.flip()
-			uploadBuffer(buffer, bmp.width, bmp.height, Kind.LUMINANCE)
-		}
 
 		override fun close() {
 		}

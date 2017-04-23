@@ -11,11 +11,14 @@ import com.soywiz.korag.shader.Uniform
 import com.soywiz.korag.shader.VarType
 import com.soywiz.korag.shader.VertexLayout
 import com.soywiz.korag.shader.gl.toGlSlString
+import com.soywiz.korim.bitmap.Bitmap
 import com.soywiz.korim.bitmap.Bitmap32
 import com.soywiz.korim.bitmap.Bitmap8
+import com.soywiz.korim.bitmap.NativeImage
 import com.soywiz.korim.color.RGBA
 import com.soywiz.korio.android.KorioAndroidContext
 import com.soywiz.korio.error.invalidOp
+import com.soywiz.korio.error.unsupported
 import com.soywiz.korio.util.Once
 import java.io.Closeable
 import java.nio.ByteBuffer
@@ -141,7 +144,7 @@ class AGAndroid : AG() {
 					val unit = value as TextureUnit
 					gl.glActiveTexture(GL.GL_TEXTURE0 + textureUnit)
 					val tex = (unit.texture as AndroidTexture?)
-					tex?.bind()
+					tex?.bindEnsuring()
 					tex?.setFilter(unit.linear)
 					gl.glUniform1i(location, textureUnit)
 					textureUnit++
@@ -297,30 +300,31 @@ class AGAndroid : AG() {
 			return false
 		}
 
-		fun uploadBuffer(data: FastMemory, width: Int, height: Int, rgba: Boolean) {
-			val type = if (rgba) GL.GL_RGBA else GL.GL_LUMINANCE
-			bind()
-			gl.glTexImage2D(GL.GL_TEXTURE_2D, 0, type, width, height, 0, type, GL.GL_UNSIGNED_BYTE, data.byteBufferOrNull)
+		fun createBufferForBitmap(bmp: Bitmap?): ByteBuffer {
+			return when (bmp) {
+				null -> ByteBuffer.allocateDirect(0)
+				is NativeImage -> createBufferForBitmap(bmp.toBmp32())
+				is Bitmap8 -> {
+					val mem = FastMemory.alloc(bmp.area)
+					mem.setArrayInt8(0, bmp.data, 0, bmp.area)
+					return mem.byteBufferOrNull
+				}
+				is Bitmap32 -> {
+					val mem = FastMemory.alloc(bmp.area * 4)
+					mem.setArrayInt32(0, bmp.data, 0, bmp.area)
+					return mem.byteBufferOrNull
+				}
+				else -> unsupported()
+			}
 		}
 
-		override fun uploadBuffer(data: ByteBuffer, width: Int, height: Int, kind: Kind) {
-			uploadBuffer(FastMemory.wrap(data), width, height, kind == Kind.RGBA)
+		override fun actualSyncUpload(source: BitmapSourceBase, bmp: Bitmap?) {
+			val type = if (source.rgba) GL.GL_RGBA else GL.GL_LUMINANCE
+			gl.glTexImage2D(GL.GL_TEXTURE_2D, 0, type, source.width, source.height, 0, type, GL.GL_UNSIGNED_BYTE, createBufferForBitmap(bmp))
 		}
 
-		override fun uploadBitmap32(bmp: Bitmap32) {
-			val mem = FastMemory.alloc(bmp.area * 4)
-			mem.setArrayInt32(0, bmp.data, 0, bmp.area)
-			uploadBuffer(mem, bmp.width, bmp.height, true)
-		}
-
-		override fun uploadBitmap8(bmp: Bitmap8) {
-			val mem = FastMemory.alloc(bmp.area)
-			mem.setArrayInt8(0, bmp.data, 0, bmp.area)
-			uploadBuffer(mem, bmp.width, bmp.height, false)
-		}
-
-		fun bind(): Unit = run { gl.glBindTexture(GL.GL_TEXTURE_2D, tex) }
-		fun unbind(): Unit = run { gl.glBindTexture(GL.GL_TEXTURE_2D, 0) }
+		override fun bind(): Unit = run { gl.glBindTexture(GL.GL_TEXTURE_2D, tex) }
+		override fun unbind(): Unit = run { gl.glBindTexture(GL.GL_TEXTURE_2D, 0) }
 
 		override fun close(): Unit = run { gl.glDeleteTextures(1, texIds, 0) }
 
