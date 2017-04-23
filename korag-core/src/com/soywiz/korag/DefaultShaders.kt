@@ -43,6 +43,20 @@ object DefaultShaders {
 		name = "PROGRAM_TINTED_TEXTURE"
 	)
 
+	val PROGRAM_TINTED_TEXTURE_PREMULT = Program(
+		vertex = VERTEX_DEFAULT,
+		fragment = FragmentShader {
+			//t_Temp1 set texture2D(u_Tex, v_Tex["xy"])
+			//t_Temp1["xyz"] set t_Temp1["xyz"] / t_Temp1["w"]
+			//out set (t_Temp1 * v_Col)
+			//out set (texture2D(u_Tex, v_Tex["xy"])["bgra"] * v_Col)
+			SET(t_Temp1, texture2D(u_Tex, v_Tex["xy"]))
+			SET(t_Temp1["rgb"], t_Temp1["rgb"] / t_Temp1["a"])
+			SET(out, t_Temp1["rgba"] * v_Col)
+		},
+		name = "PROGRAM_TINTED_TEXTURE"
+	)
+
 	val PROGRAM_SOLID_COLOR = Program(
 		vertex = VERTEX_DEFAULT,
 		fragment = FRAGMENT_SOLID_COLOR,
@@ -73,5 +87,5 @@ object DefaultShaders {
 		name = "PROGRAM_DEBUG_WITH_PROJ"
 	)
 
-	val PROGRAM_DEFAULT by lazy { PROGRAM_TINTED_TEXTURE }
+	val PROGRAM_DEFAULT by lazy { PROGRAM_TINTED_TEXTURE_PREMULT }
 }

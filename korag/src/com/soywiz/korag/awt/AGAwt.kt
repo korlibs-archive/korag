@@ -357,8 +357,10 @@ abstract class AGAwtBase : AG() {
 					return mem.byteBufferOrNull
 				}
 				is Bitmap32 -> {
-					val mem = FastMemory.alloc(bmp.area * 4)
-					mem.setArrayInt32(0, bmp.data, 0, bmp.area)
+					val abmp: Bitmap32 = if (premultiplied) bmp.premultipliedIfRequired() else bmp.depremultipliedIfRequired()
+					//val abmp: Bitmap32 = bmp
+					val mem = FastMemory.alloc(abmp.area * 4)
+					mem.setArrayInt32(0, abmp.data, 0, abmp.area)
 					return mem.byteBufferOrNull
 				}
 				else -> unsupported()

@@ -106,6 +106,10 @@ abstract class AG : Extra by Extra.Mixin() {
 			val REPLACE = BlendFactors(BlendFactor.ONE, BlendFactor.ZERO, BlendFactor.ONE, BlendFactor.ZERO)
 			val NORMAL = BlendFactors(BlendFactor.SOURCE_ALPHA, BlendFactor.ONE_MINUS_SOURCE_ALPHA, BlendFactor.ONE, BlendFactor.ONE_MINUS_SOURCE_ALPHA)
 			val ADD = BlendFactors(BlendFactor.ONE, BlendFactor.ONE, BlendFactor.ONE, BlendFactor.ONE)
+
+			val REPLACE_PREMULT = BlendFactors(BlendFactor.ONE, BlendFactor.ZERO, BlendFactor.ONE, BlendFactor.ZERO)
+			val NORMAL_PREMULT = BlendFactors(BlendFactor.ONE, BlendFactor.ONE_MINUS_SOURCE_ALPHA, BlendFactor.ONE, BlendFactor.ONE_MINUS_SOURCE_ALPHA)
+			val ADD_PREMULT = BlendFactors(BlendFactor.ONE, BlendFactor.ONE, BlendFactor.ONE, BlendFactor.ONE)
 		}
 	}
 
@@ -128,6 +132,7 @@ abstract class AG : Extra by Extra.Mixin() {
 	}
 
 	open class Texture : Closeable {
+		val premultiplied = true
 		var requestMipmaps = false
 		var mipmaps = false; protected set
 		var source: BitmapSourceBase = SyncBitmapSource.NULL
