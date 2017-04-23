@@ -292,14 +292,6 @@ class AGAndroid : AG() {
 
 		val tex = texIds[0]
 
-		override fun createMipmaps(): Boolean {
-			bind()
-			setFilter(true)
-			setWrapST()
-			//glm["generateMipmap"](gl["TEXTURE_2D"])
-			return false
-		}
-
 		fun createBufferForBitmap(bmp: Bitmap?): ByteBuffer {
 			return when (bmp) {
 				null -> ByteBuffer.allocateDirect(0)
@@ -318,9 +310,18 @@ class AGAndroid : AG() {
 			}
 		}
 
-		override fun actualSyncUpload(source: BitmapSourceBase, bmp: Bitmap?) {
+		override fun actualSyncUpload(source: BitmapSourceBase, bmp: Bitmap?, requestMipmaps: Boolean) {
 			val type = if (source.rgba) GL.GL_RGBA else GL.GL_LUMINANCE
 			gl.glTexImage2D(GL.GL_TEXTURE_2D, 0, type, source.width, source.height, 0, type, GL.GL_UNSIGNED_BYTE, createBufferForBitmap(bmp))
+
+			this.mipmaps = false
+
+			if (requestMipmaps) {
+				bind()
+				setFilter(true)
+				setWrapST()
+				//glm["generateMipmap"](gl["TEXTURE_2D"]); this.mipmaps = true
+			}
 		}
 
 		override fun bind(): Unit = run { gl.glBindTexture(GL.GL_TEXTURE_2D, tex) }

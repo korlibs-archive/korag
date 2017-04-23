@@ -347,8 +347,6 @@ abstract class AGAwtBase : AG() {
 			texIds[0]
 		}
 
-		override fun createMipmaps(): Boolean = true
-
 		fun createBufferForBitmap(bmp: Bitmap?): ByteBuffer {
 			return when (bmp) {
 				null -> ByteBuffer.allocateDirect(0)
@@ -367,13 +365,17 @@ abstract class AGAwtBase : AG() {
 			}
 		}
 
-		override fun actualSyncUpload(source: BitmapSourceBase, bmp: Bitmap?) {
+		override fun actualSyncUpload(source: BitmapSourceBase, bmp: Bitmap?, requestMipmaps: Boolean) {
 			val Bpp = if (source.rgba) 4 else 1
 			val type = if (source.rgba) GL2.GL_RGBA else GL2.GL_LUMINANCE
 			checkErrors {
 				gl.glTexImage2D(GL2.GL_TEXTURE_2D, 0, type, source.width, source.height, 0, type, GL2.GL_UNSIGNED_BYTE, createBufferForBitmap(bmp))
 			}
-			if (mipmaps) {
+
+			this.mipmaps = false
+
+			if (requestMipmaps) {
+				this.mipmaps = true
 				setFilter(true)
 				setWrapST()
 				gl.glGenerateMipmap(GL.GL_TEXTURE_2D)

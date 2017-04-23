@@ -128,7 +128,8 @@ abstract class AG : Extra by Extra.Mixin() {
 	}
 
 	open class Texture : Closeable {
-		var mipmaps = false
+		var requestMipmaps = false
+		var mipmaps = false; protected set
 		var source: BitmapSourceBase = SyncBitmapSource.NULL
 		private var uploaded: Boolean = false
 		private var generating: Boolean = false
@@ -143,7 +144,7 @@ abstract class AG : Extra by Extra.Mixin() {
 		fun upload(source: BitmapSourceBase, mipmaps: Boolean = false): Texture = this.apply {
 			this.source = source
 			uploadedSource()
-			this.mipmaps = if (mipmaps) createMipmaps() else false
+			this.requestMipmaps = mipmaps
 		}
 
 		open protected fun uploadedSource() {
@@ -179,19 +180,17 @@ abstract class AG : Extra by Extra.Mixin() {
 					uploaded = true
 					generating = false
 					generated = false
-					actualSyncUpload(source, tempBitmap)
+					actualSyncUpload(source, tempBitmap, requestMipmaps)
 					tempBitmap = null
 					ready = true
 				}
 			}
 		}
 
-		open fun actualSyncUpload(source: BitmapSourceBase, bmp: Bitmap?) {
+		open fun actualSyncUpload(source: BitmapSourceBase, bmp: Bitmap?, requestMipmaps: Boolean) {
 		}
 
 		enum class Kind { RGBA, LUMINANCE }
-
-		open protected fun createMipmaps() = false
 
 		override fun close() {
 		}

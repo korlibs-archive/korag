@@ -6,8 +6,6 @@ import com.soywiz.korag.shader.Uniform
 import com.soywiz.korag.shader.VarType
 import com.soywiz.korag.shader.VertexLayout
 import com.soywiz.korim.bitmap.Bitmap32
-import com.soywiz.korim.bitmap.Bitmap8
-import java.nio.ByteBuffer
 
 open class LogAG(
 	width: Int = 640,
@@ -41,7 +39,6 @@ open class LogAG(
 	override fun dispose() = log("dispose()")
 
 	inner class LogTexture(val id: Int) : Texture() {
-		override fun createMipmaps(): Boolean = true.also { log("$this.createMipmaps()") }
 		override fun uploadedSource() {
 			log("$this.uploadedBitmap($source, ${source.width}, ${source.height})")
 		}

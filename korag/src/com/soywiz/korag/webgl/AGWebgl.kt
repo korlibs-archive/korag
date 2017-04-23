@@ -15,7 +15,6 @@ import com.soywiz.korag.shader.gl.toGlSlString
 import com.soywiz.korim.bitmap.Bitmap
 import com.soywiz.korim.bitmap.Bitmap32
 import com.soywiz.korim.bitmap.Bitmap8
-import com.soywiz.korim.bitmap.NativeImage
 import com.soywiz.korim.color.RGBA
 import com.soywiz.korim.html.CanvasNativeImage
 import com.soywiz.korio.error.invalidOp
@@ -23,7 +22,6 @@ import com.soywiz.korio.util.OS
 import com.soywiz.korio.util.Once
 import com.soywiz.korio.util.UByteArray
 import java.io.Closeable
-import java.nio.ByteBuffer
 
 class AGFactoryWebgl : AGFactory() {
 	override val available: Boolean = OS.isJs
@@ -120,15 +118,7 @@ class AGWebgl : AG() {
 	inner class WebglTexture() : Texture() {
 		val tex = gl.call("createTexture")
 
-		override fun createMipmaps(): Boolean {
-			bind()
-			setFilter(true)
-			setWrapST()
-			//gl["generateMipmap"](gl["TEXTURE_2D"])
-			return false
-		}
-
-		override fun actualSyncUpload(source: BitmapSourceBase, bmp: Bitmap?) {
+		override fun actualSyncUpload(source: BitmapSourceBase, bmp: Bitmap?, requestMipmaps: Boolean) {
 			when (bmp) {
 				null -> {
 				}
@@ -147,6 +137,15 @@ class AGWebgl : AG() {
 					val type = if (rgba) gl["RGBA"] else gl["LUMINANCE"]
 					gl.call("texImage2D", gl["TEXTURE_2D"], 0, type, width, height, 0, type, gl["UNSIGNED_BYTE"], rdata)
 				}
+			}
+
+			this.mipmaps = false
+
+			if (requestMipmaps) {
+				bind()
+				setFilter(true)
+				setWrapST()
+				//gl["generateMipmap"](gl["TEXTURE_2D"]); this.mipmaps = true
 			}
 		}
 
