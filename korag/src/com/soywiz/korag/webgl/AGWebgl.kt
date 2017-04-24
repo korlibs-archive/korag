@@ -31,7 +31,11 @@ class AGFactoryWebgl : AGFactory() {
 
 class AGWebgl : AG() {
 	val canvas = document.call("createElement", "canvas")!!
-	val glOpts = jsObject("premultipliedAlpha" to false, "alpha" to false)
+	val glOpts = jsObject(
+		"premultipliedAlpha" to false,
+		"alpha" to false,
+		"stencil" to true
+	)
 	val gl = canvas.call("getContext", "webgl", glOpts) ?: canvas.call("getContext", "experimental-webgl", glOpts)
 	override val nativeComponent: Any = canvas
 	override val pixelDensity: Double get() = window["devicePixelRatio"]?.toDouble() ?: 1.0
@@ -238,6 +242,35 @@ class AGWebgl : AG() {
 		BlendFactor.ZERO -> gl["ZERO"].toInt()
 	}
 
+	fun TriangleFace.toGl() = when (this) {
+		TriangleFace.FRONT -> gl["FRONT"]
+		TriangleFace.BACK -> gl["BACK"]
+		TriangleFace.FRONT_AND_BACK -> gl["FRONT_AND_BACK"]
+		TriangleFace.NONE -> gl["FRONT"]
+	}
+
+	fun CompareMode.toGl() = when (this) {
+		CompareMode.ALWAYS -> gl["ALWAYS"]
+		CompareMode.EQUAL -> gl["EQUAL"]
+		CompareMode.GREATER -> gl["GREATER"]
+		CompareMode.GREATER_EQUAL -> gl["GEQUAL"]
+		CompareMode.LESS -> gl["LESS"]
+		CompareMode.LESS_EQUAL -> gl["LEQUAL"]
+		CompareMode.NEVER -> gl["NEVER"]
+		CompareMode.NOT_EQUAL -> gl["NOTEQUAL"]
+	}
+
+	fun StencilOp.toGl() = when (this) {
+		StencilOp.DECREMENT_SATURATE -> gl["DECR"]
+		StencilOp.DECREMENT_WRAP -> gl["DECR_WRAP"]
+		StencilOp.INCREMENT_SATURATE -> gl["INCR"]
+		StencilOp.INCREMENT_WRAP -> gl["INCR_WRAP"]
+		StencilOp.INVERT -> gl["INVERT"]
+		StencilOp.KEEP -> gl["KEEP"]
+		StencilOp.SET -> gl["REPLACE"]
+		StencilOp.ZERO -> gl["ZERO"]
+	}
+
 	override fun draw(
 		vertices: Buffer,
 		program: Program,
@@ -299,6 +332,18 @@ class AGWebgl : AG() {
 		} else {
 			gl.call("enable", gl["BLEND"])
 			gl.call("blendFuncSeparate", blending.srcRGB.toGl(), blending.dstRGB.toGl(), blending.srcA.toGl(), blending.dstA.toGl())
+		}
+
+		gl.call("colorMask", colorMask.red, colorMask.green, colorMask.blue, colorMask.alpha)
+
+		if (stencil.enabled) {
+			gl.call("enable", gl["STENCIL_TEST"])
+			gl.call("stencilFunc", stencil.compareMode.toGl(), stencil.referenceValue, stencil.readMask)
+			gl.call("stencilOp", stencil.actionOnDepthFail.toGl(), stencil.actionOnDepthPassStencilFail.toGl(), stencil.actionOnBothPass.toGl())
+			gl.call("stencilMask", stencil.writeMask)
+		} else {
+			gl.call("disable", gl["STENCIL_TEST"])
+			gl.call("stencilMask", 0)
 		}
 
 		//gl["drawArrays"](type.glDrawMode, 0, 3)
