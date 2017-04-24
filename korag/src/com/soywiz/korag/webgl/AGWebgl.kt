@@ -31,7 +31,7 @@ class AGFactoryWebgl : AGFactory() {
 
 class AGWebgl : AG() {
 	val canvas = document.call("createElement", "canvas")!!
-	val glOpts = jsObject("premultipliedAlpha" to false)
+	val glOpts = jsObject("premultipliedAlpha" to false, "alpha" to false)
 	val gl = canvas.call("getContext", "webgl", glOpts) ?: canvas.call("getContext", "experimental-webgl", glOpts)
 	override val nativeComponent: Any = canvas
 	override val pixelDensity: Double get() = window["devicePixelRatio"]?.toDouble() ?: 1.0
@@ -125,6 +125,8 @@ class AGWebgl : AG() {
 				is CanvasNativeImage -> {
 					val type = gl["RGBA"]
 					//println("Uploading native image!")
+
+					gl.call("pixelStorei", gl["UNPACK_PREMULTIPLY_ALPHA_WEBGL"], premultiplied)
 					gl.call("texImage2D", gl["TEXTURE_2D"], 0, type, type, gl["UNSIGNED_BYTE"], bmp.canvas)
 				}
 				is Bitmap32, is Bitmap8 -> {
@@ -135,6 +137,7 @@ class AGWebgl : AG() {
 					val data: Any = (bmp as? Bitmap32)?.data ?: ((bmp as? Bitmap8)?.data ?: ByteArray(width * height * Bpp))
 					val rdata = jsNew("Uint8Array", data.asJsDynamic().call("getBuffer"), 0, width * height * Bpp)
 					val type = if (rgba) gl["RGBA"] else gl["LUMINANCE"]
+					gl.call("pixelStorei", gl["UNPACK_PREMULTIPLY_ALPHA_WEBGL"], if (bmp is Bitmap32) (premultiplied xor bmp.premultiplied) else false)
 					gl.call("texImage2D", gl["TEXTURE_2D"], 0, type, width, height, 0, type, gl["UNSIGNED_BYTE"], rdata)
 				}
 			}
