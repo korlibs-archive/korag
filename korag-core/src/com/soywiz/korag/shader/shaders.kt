@@ -72,6 +72,7 @@ class Program(val vertex: VertexShader, val fragment: FragmentShader, val name: 
 	sealed class Stm {
 		class Stms(val stms: List<Stm>) : Stm()
 		class Set(val to: Operand, val from: Operand) : Stm()
+		class Discard : Stm()
 		class If(val cond: Operand, val tbody: Stm, var fbody: Stm? = null) : Stm()
 	}
 
@@ -111,6 +112,10 @@ class Program(val vertex: VertexShader, val fragment: FragmentShader, val name: 
 
 		fun SET(target: Operand, expr: Operand) {
 			outputStms += Stm.Set(target, expr)
+		}
+
+		fun DISCARD() {
+			outputStms += Stm.Discard()
 		}
 
 		infix fun Operand.set(from: Operand) {
@@ -161,6 +166,7 @@ class Program(val vertex: VertexShader, val fragment: FragmentShader, val name: 
 		fun mix(a: Operand, b: Operand, step: Operand) = Func("mix", listOf(a, b, step))
 
 		val Int.lit: IntLiteral get() = IntLiteral(this)
+		val Double.lit: FloatLiteral get() = FloatLiteral(this.toFloat())
 		val Float.lit: FloatLiteral get() = FloatLiteral(this)
 		val Boolean.lit: BoolLiteral get() = BoolLiteral(this)
 		fun lit(type: VarType, vararg ops: Operand): Operand = Vector(type, ops.toList())
@@ -173,6 +179,13 @@ class Program(val vertex: VertexShader, val fragment: FragmentShader, val name: 
 		operator fun Operand.times(that: Operand) = Binop(this, "*", that)
 		operator fun Operand.div(that: Operand) = Binop(this, "/", that)
 		operator fun Operand.rem(that: Operand) = Binop(this, "%", that)
+
+		infix fun Operand.eq(that: Operand) = Binop(this, "==", that)
+		infix fun Operand.ne(that: Operand) = Binop(this, "!=", that)
+		infix fun Operand.lt(that: Operand) = Binop(this, "<", that)
+		infix fun Operand.le(that: Operand) = Binop(this, "<=", that)
+		infix fun Operand.gt(that: Operand) = Binop(this, ">", that)
+		infix fun Operand.ge(that: Operand) = Binop(this, ">=", that)
 	}
 
 	open class Visitor {
@@ -180,6 +193,7 @@ class Program(val vertex: VertexShader, val fragment: FragmentShader, val name: 
 			is Stm.Stms -> visit(stm)
 			is Stm.Set -> visit(stm)
 			is Stm.If -> visit(stm)
+			is Stm.Discard -> visit(stm)
 		}
 
 		open fun visit(stms: Stm.Stms) {
@@ -194,6 +208,9 @@ class Program(val vertex: VertexShader, val fragment: FragmentShader, val name: 
 		open fun visit(stm: Stm.Set) {
 			visit(stm.from)
 			visit(stm.to)
+		}
+
+		open fun visit(stm: Stm.Discard) {
 		}
 
 		open fun visit(operand: Operand) = when (operand) {
@@ -260,7 +277,7 @@ class Program(val vertex: VertexShader, val fragment: FragmentShader, val name: 
 	}
 }
 
-open class Shader(val stm: Program.Stm) {
+open class Shader(val type: ShaderType, val stm: Program.Stm) {
 	val uniforms by lazy {
 		val out = LinkedHashSet<Uniform>()
 		object : Program.Visitor() {
@@ -278,8 +295,8 @@ open class Shader(val stm: Program.Stm) {
 	}
 }
 
-open class VertexShader(stm: Program.Stm) : Shader(stm)
-open class FragmentShader(stm: Program.Stm) : Shader(stm)
+open class VertexShader(stm: Program.Stm) : Shader(ShaderType.VERTEX, stm)
+open class FragmentShader(stm: Program.Stm) : Shader(ShaderType.FRAGMENT, stm)
 
 fun VertexShader(callback: Program.Builder.() -> Unit): VertexShader {
 	val builder = Program.Builder(ShaderType.VERTEX)

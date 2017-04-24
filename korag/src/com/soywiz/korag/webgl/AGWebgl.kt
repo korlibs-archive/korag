@@ -238,11 +238,25 @@ class AGWebgl : AG() {
 		BlendFactor.ZERO -> gl["ZERO"].toInt()
 	}
 
-	override fun draw(vertices: Buffer, indices: Buffer, program: Program, type: DrawType, vertexLayout: VertexLayout, vertexCount: Int, offset: Int, blending: BlendFactors, uniforms: Map<Uniform, Any>) {
-		checkBuffers(vertices, indices)
+	override fun draw(
+		vertices: Buffer,
+		program: Program,
+		type: DrawType,
+		vertexLayout: VertexLayout,
+		vertexCount: Int,
+		indices: Buffer?,
+		offset: Int,
+		blending: BlendFactors,
+		uniforms: Map<Uniform, Any>,
+		stencil: StencilState,
+		colorMask: ColorMaskState
+	) {
+		val mustFreeIndices = indices == null
+		val aindices = indices ?: createIndexBuffer((0 until vertexCount).map(Int::toShort).toShortArray())
+		checkBuffers(vertices, aindices)
 		val glProgram = getProgram(program)
 		(vertices as WebglBuffer).bind()
-		(indices as WebglBuffer).bind()
+		(aindices as WebglBuffer).bind()
 		glProgram.bind()
 
 		for (n in vertexLayout.attributePositions.indices) {
@@ -297,6 +311,7 @@ class AGWebgl : AG() {
 				gl.call("disableVertexAttribArray", loc)
 			}
 		}
+		if (mustFreeIndices) aindices.close()
 	}
 
 	private fun glUniformMatrix4fv(location: Any, b: Boolean, values: FloatArray) {

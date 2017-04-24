@@ -117,11 +117,26 @@ class AGAndroid : AG() {
 		BlendFactor.ZERO -> GL.GL_ZERO
 	}
 
-	override fun draw(vertices: Buffer, indices: Buffer, program: Program, type: DrawType, vertexLayout: VertexLayout, vertexCount: Int, offset: Int, blending: BlendFactors, uniforms: Map<Uniform, Any>) {
-		checkBuffers(vertices, indices)
+	override fun draw(
+		vertices: Buffer,
+		program: Program,
+		type: DrawType,
+		vertexLayout: VertexLayout,
+		vertexCount: Int,
+		indices: Buffer?,
+		offset: Int,
+		blending: BlendFactors,
+		uniforms: Map<Uniform, Any>,
+		stencil: StencilState,
+		colorMask: ColorMaskState
+	) {
+		val mustFreeIndices = indices == null
+		val aindices = indices ?: createIndexBuffer((0 until vertexCount).map(Int::toShort).toShortArray())
+
+		checkBuffers(vertices, aindices)
 		val glProgram = getProgram(program)
 		(vertices as AndroidBuffer).bind()
-		(indices as AndroidBuffer).bind()
+		(aindices as AndroidBuffer).bind()
 		glProgram.use()
 
 		for (n in vertexLayout.attributePositions.indices) {
@@ -175,6 +190,8 @@ class AGAndroid : AG() {
 				gl.glDisableVertexAttribArray(loc)
 			}
 		}
+
+		if (mustFreeIndices) aindices.close()
 	}
 
 	val DrawType.glDrawMode: Int get() = when (this) {

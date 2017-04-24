@@ -71,9 +71,21 @@ open class LogAG(
 	override fun createTexture(): Texture = LogTexture(textureId++).apply { log("createTexture():$id") }
 
 	override fun createBuffer(kind: Buffer.Kind): Buffer = LogBuffer(bufferId++, kind).apply { log("createBuffer($kind):$id") }
-	override fun draw(vertices: Buffer, indices: Buffer, program: Program, type: DrawType, vertexLayout: VertexLayout, vertexCount: Int, offset: Int, blending: BlendFactors, uniforms: Map<Uniform, Any>) {
+	override fun draw(
+		vertices: Buffer,
+		program: Program,
+		type: DrawType,
+		vertexLayout: VertexLayout,
+		vertexCount: Int,
+		indices: Buffer?,
+		offset: Int,
+		blending: BlendFactors,
+		uniforms: Map<Uniform, Any>,
+		stencil: StencilState,
+		colorMask: ColorMaskState
+	) {
 		try {
-			log("draw(vertices=$vertices, indices=$indices, program=$program, type=$type, vertexLayout=$vertexLayout, vertexCount=$vertexCount, offset=$offset, blending=$blending, uniforms=$uniforms)")
+			log("draw(vertices=$vertices, indices=$indices, program=$program, type=$type, vertexLayout=$vertexLayout, vertexCount=$vertexCount, offset=$offset, blending=$blending, uniforms=$uniforms, stencil=$stencil, colorMask=$colorMask)")
 
 			val missingUniforms = program.uniforms - uniforms.keys
 			val extraUniforms = uniforms.keys - program.uniforms

@@ -19,7 +19,6 @@ import com.soywiz.korim.bitmap.Bitmap8
 import com.soywiz.korim.bitmap.NativeImage
 import com.soywiz.korim.color.RGBA
 import com.soywiz.korio.async.Signal
-import com.soywiz.korio.async.async
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.error.unsupported
 import com.soywiz.korio.util.Once
@@ -62,7 +61,9 @@ class AGFactoryAwt : AGFactory() {
 
 abstract class AGAwtBase : AG() {
 	var glprofile = GLProfile.getDefault()
-	var glcapabilities = GLCapabilities(glprofile)
+	var glcapabilities = GLCapabilities(glprofile).apply {
+		stencilBits = 8
+	}
 	var initialized = false
 	lateinit var ad: GLAutoDrawable
 	lateinit var gl: GL2
@@ -154,11 +155,54 @@ abstract class AGAwtBase : AG() {
 		BlendFactor.ZERO -> GL.GL_ZERO
 	}
 
-	override fun draw(vertices: Buffer, indices: Buffer, program: Program, type: DrawType, vertexLayout: VertexLayout, vertexCount: Int, offset: Int, blending: BlendFactors, uniforms: Map<Uniform, Any>) {
-		checkBuffers(vertices, indices)
+	fun TriangleFace.toGl() = when (this) {
+		TriangleFace.FRONT -> GL.GL_FRONT
+		TriangleFace.BACK -> GL.GL_BACK
+		TriangleFace.FRONT_AND_BACK -> GL.GL_FRONT_AND_BACK
+		TriangleFace.NONE -> GL.GL_FRONT
+	}
+
+	fun CompareMode.toGl() = when (this) {
+		CompareMode.ALWAYS -> GL.GL_ALWAYS
+		CompareMode.EQUAL -> GL.GL_EQUAL
+		CompareMode.GREATER -> GL.GL_GREATER
+		CompareMode.GREATER_EQUAL -> GL.GL_GEQUAL
+		CompareMode.LESS -> GL.GL_LESS
+		CompareMode.LESS_EQUAL -> GL.GL_LEQUAL
+		CompareMode.NEVER -> GL.GL_NEVER
+		CompareMode.NOT_EQUAL -> GL.GL_NOTEQUAL
+	}
+
+	fun StencilOp.toGl() = when (this) {
+		StencilOp.DECREMENT_SATURATE -> GL.GL_DECR
+		StencilOp.DECREMENT_WRAP -> GL.GL_DECR_WRAP
+		StencilOp.INCREMENT_SATURATE -> GL.GL_INCR
+		StencilOp.INCREMENT_WRAP -> GL.GL_INCR_WRAP
+		StencilOp.INVERT -> GL.GL_INVERT
+		StencilOp.KEEP -> GL.GL_KEEP
+		StencilOp.SET -> GL.GL_REPLACE
+		StencilOp.ZERO -> GL.GL_ZERO
+	}
+
+	override fun draw(
+		vertices: Buffer,
+		program: Program,
+		type: DrawType,
+		vertexLayout: VertexLayout,
+		vertexCount: Int,
+		indices: Buffer?,
+		offset: Int,
+		blending: BlendFactors,
+		uniforms: Map<Uniform, Any>,
+		stencil: StencilState,
+		colorMask: ColorMaskState
+	) {
+		val mustFreeIndices = indices == null
+		val aindices = indices ?: createIndexBuffer((0 until vertexCount).map(Int::toShort).toShortArray())
+		checkBuffers(vertices, aindices)
 		val glProgram = getProgram(program)
 		(vertices as AwtBuffer).bind(gl)
-		(indices as AwtBuffer).bind(gl)
+		(aindices as AwtBuffer).bind(gl)
 		glProgram.use()
 
 		for (n in vertexLayout.attributePositions.indices) {
@@ -196,11 +240,23 @@ abstract class AGAwtBase : AG() {
 			}
 		}
 
-		if (blending.disabled) {
-			checkErrors { gl.glDisable(GL2.GL_BLEND) }
-		} else {
+		if (blending.enabled) {
 			checkErrors { gl.glEnable(GL2.GL_BLEND) }
 			checkErrors { gl.glBlendFuncSeparate(blending.srcRGB.toGl(), blending.dstRGB.toGl(), blending.srcA.toGl(), blending.dstA.toGl()) }
+		} else {
+			checkErrors { gl.glDisable(GL2.GL_BLEND) }
+		}
+
+		checkErrors { gl.glColorMask(colorMask.red, colorMask.green, colorMask.blue, colorMask.alpha) }
+
+		if (stencil.enabled) {
+			checkErrors { gl.glEnable(GL2.GL_STENCIL_TEST) }
+			checkErrors { gl.glStencilFunc(stencil.compareMode.toGl(), stencil.referenceValue, stencil.readMask) }
+			checkErrors { gl.glStencilOp(stencil.actionOnDepthFail.toGl(), stencil.actionOnDepthPassStencilFail.toGl(), stencil.actionOnBothPass.toGl()) }
+			checkErrors { gl.glStencilMask(stencil.writeMask) }
+		} else {
+			checkErrors { gl.glDisable(GL2.GL_STENCIL_TEST) }
+			checkErrors { gl.glStencilMask(0) }
 		}
 
 		checkErrors { gl.glDrawElements(type.glDrawMode, vertexCount, GL2.GL_UNSIGNED_SHORT, offset.toLong()) }
@@ -212,6 +268,8 @@ abstract class AGAwtBase : AG() {
 				checkErrors { gl.glDisableVertexAttribArray(loc) }
 			}
 		}
+
+		if (mustFreeIndices) aindices.close()
 	}
 
 	val DrawType.glDrawMode: Int get() = when (this) {
@@ -421,12 +479,16 @@ abstract class AGAwtBase : AG() {
 		}
 	}
 
+	@PublishedApi internal val checkErrors = true
+
 	inline fun <T> checkErrors(callback: () -> T): T {
 		val res = callback()
-		val error = gl.glGetError()
-		if (error != GL.GL_NO_ERROR) {
-			println("OpenGL error: $error")
-			throw RuntimeException("OpenGL error: $error")
+		if (checkErrors) {
+			val error = gl.glGetError()
+			if (error != GL.GL_NO_ERROR) {
+				println("OpenGL error: $error")
+				throw RuntimeException("OpenGL error: $error")
+			}
 		}
 		return res
 	}

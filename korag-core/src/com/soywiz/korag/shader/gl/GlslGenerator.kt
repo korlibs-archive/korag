@@ -72,6 +72,10 @@ class GlslGenerator(val kind: ShaderType, @Suppress("unused") val gles: Boolean 
 		programStr.append(";")
 	}
 
+	override fun visit(stm: Program.Stm.Discard) {
+		programStr.append("discard;")
+	}
+
 	override fun visit(operand: Program.Vector) {
 		programStr.append("vec4(")
 		var first = true
@@ -172,3 +176,5 @@ class GlslGenerator(val kind: ShaderType, @Suppress("unused") val gles: Boolean 
 		programStr.append(".${operand.swizzle}")
 	}
 }
+
+fun Shader.toGlSl(): String = GlslGenerator(this.type).generate(this.stm)

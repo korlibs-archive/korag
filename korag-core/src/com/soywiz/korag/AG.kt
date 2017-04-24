@@ -302,17 +302,62 @@ abstract class AG : Extra by Extra.Mixin() {
 		upload(data, offset, length)
 	}
 
-	open fun draw(vertices: Buffer, indices: Buffer, program: Program, type: DrawType, vertexLayout: VertexLayout, vertexCount: Int, offset: Int = 0, blending: BlendFactors = BlendFactors.NORMAL, uniforms: Map<Uniform, Any> = mapOf()) {
-		//VertexFormat()
-		//	.add("hello", VertexFormat.Element.Type.Byte4)
+	enum class StencilOp {
+		DECREMENT_SATURATE,
+		DECREMENT_WRAP,
+		INCREMENT_SATURATE,
+		INCREMENT_WRAP,
+		INVERT,
+		KEEP,
+		SET,
+		ZERO;
 	}
 
-	fun draw(vertices: Buffer, program: Program, type: DrawType, vertexLayout: VertexLayout, vertexCount: Int, offset: Int = 0, blending: BlendFactors = BlendFactors.NORMAL, uniforms: Map<Uniform, Any> = mapOf()) {
-		createIndexBuffer((0 until vertexCount).map(Int::toShort).toShortArray()).use { indices ->
-			draw(vertices, indices, program, type, vertexLayout, vertexCount, offset, blending, uniforms)
-		}
-		//VertexFormat()
-		//	.add("hello", VertexFormat.Element.Type.Byte4)
+	enum class TriangleFace {
+		FRONT, BACK, FRONT_AND_BACK, NONE;
+	}
+
+	enum class CompareMode {
+		ALWAYS, EQUAL, GREATER, GREATER_EQUAL, LESS, LESS_EQUAL, NEVER, NOT_EQUAL;
+	}
+
+	data class ColorMaskState(
+		var red: Boolean = true,
+		var green: Boolean = true,
+		var blue: Boolean = true,
+		var alpha: Boolean = true
+	) {
+		//val enabled = !red || !green || !blue || !alpha
+	}
+
+	data class StencilState(
+		var enabled: Boolean = false,
+		var triangleFace: TriangleFace = TriangleFace.FRONT_AND_BACK,
+		var compareMode: CompareMode = CompareMode.ALWAYS,
+		var actionOnBothPass: StencilOp = StencilOp.KEEP,
+		var actionOnDepthFail: StencilOp = StencilOp.KEEP,
+		var actionOnDepthPassStencilFail: StencilOp = StencilOp.KEEP,
+		var referenceValue: Int = 0,
+		var readMask: Int = 0xFF,
+		var writeMask: Int = 0xFF
+	)
+
+	private val dummyStencilState = StencilState()
+	private val dummyColorMaskState = ColorMaskState()
+
+	open fun draw(
+		vertices: Buffer,
+		program: Program,
+		type: DrawType,
+		vertexLayout: VertexLayout,
+		vertexCount: Int,
+		indices: Buffer? = null,
+		offset: Int = 0,
+		blending: BlendFactors = BlendFactors.NORMAL,
+		uniforms: Map<Uniform, Any> = mapOf(),
+		stencil: StencilState = dummyStencilState,
+		colorMask: ColorMaskState = dummyColorMaskState
+	) {
 	}
 
 	protected fun checkBuffers(vertices: AG.Buffer, indices: AG.Buffer) {
