@@ -152,7 +152,7 @@ class AGWebgl : AG() {
 				bind()
 				setFilter(true)
 				setWrapST()
-				//gl["generateMipmap"](gl["TEXTURE_2D"]); this.mipmaps = true
+				gl.call("generateMipmap", gl["TEXTURE_2D"]); this.mipmaps = true
 			}
 		}
 
