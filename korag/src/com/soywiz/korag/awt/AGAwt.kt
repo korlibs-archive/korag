@@ -13,6 +13,7 @@ import com.soywiz.korag.shader.Uniform
 import com.soywiz.korag.shader.VarType
 import com.soywiz.korag.shader.VertexLayout
 import com.soywiz.korag.shader.gl.toGlSlString
+import com.soywiz.korim.awt.AwtNativeImage
 import com.soywiz.korim.bitmap.Bitmap
 import com.soywiz.korim.bitmap.Bitmap32
 import com.soywiz.korim.bitmap.Bitmap8
@@ -22,6 +23,7 @@ import com.soywiz.korio.async.Signal
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.error.unsupported
 import com.soywiz.korio.util.Once
+import java.awt.image.DataBufferInt
 import java.io.Closeable
 import java.nio.ByteBuffer
 import java.nio.IntBuffer
@@ -408,7 +410,14 @@ abstract class AGAwtBase : AG() {
 		fun createBufferForBitmap(bmp: Bitmap?): ByteBuffer {
 			return when (bmp) {
 				null -> ByteBuffer.allocateDirect(0)
-				is NativeImage -> createBufferForBitmap(bmp.toBmp32())
+				is NativeImage -> {
+					val mem = FastMemory.alloc(bmp.area * 4)
+					val image = this as AwtNativeImage
+					val data = (image.awtImage.raster.dataBuffer as DataBufferInt).data
+					//println("BMP: ${image.awtImage.type}")
+					mem.setArrayInt32(0, data, 0, bmp.area)
+					return mem.byteBufferOrNull
+				}
 				is Bitmap8 -> {
 					val mem = FastMemory.alloc(bmp.area)
 					mem.setArrayInt8(0, bmp.data, 0, bmp.area)
@@ -416,6 +425,7 @@ abstract class AGAwtBase : AG() {
 				}
 				is Bitmap32 -> {
 					val abmp: Bitmap32 = if (premultiplied) bmp.premultipliedIfRequired() else bmp.depremultipliedIfRequired()
+					//println("BMP: Bitmap32")
 					//val abmp: Bitmap32 = bmp
 					val mem = FastMemory.alloc(abmp.area * 4)
 					mem.setArrayInt32(0, abmp.data, 0, abmp.area)
@@ -427,7 +437,11 @@ abstract class AGAwtBase : AG() {
 
 		override fun actualSyncUpload(source: BitmapSourceBase, bmp: Bitmap?, requestMipmaps: Boolean) {
 			val Bpp = if (source.rgba) 4 else 1
-			val type = if (source.rgba) GL2.GL_RGBA else GL2.GL_LUMINANCE
+			val type = if (source.rgba) {
+				if (source is NativeImage) GL2.GL_BGRA else GL2.GL_RGBA
+			} else {
+				GL2.GL_LUMINANCE
+			}
 			checkErrors {
 				gl.glTexImage2D(GL2.GL_TEXTURE_2D, 0, type, source.width, source.height, 0, type, GL2.GL_UNSIGNED_BYTE, createBufferForBitmap(bmp))
 			}
