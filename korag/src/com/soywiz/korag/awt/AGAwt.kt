@@ -412,10 +412,13 @@ abstract class AGAwtBase : AG() {
 				null -> ByteBuffer.allocateDirect(0)
 				is NativeImage -> {
 					val mem = FastMemory.alloc(bmp.area * 4)
-					val image = this as AwtNativeImage
+					val image = bmp as AwtNativeImage
 					val data = (image.awtImage.raster.dataBuffer as DataBufferInt).data
 					//println("BMP: ${image.awtImage.type}")
-					mem.setArrayInt32(0, data, 0, bmp.area)
+					for (n in 0 until bmp.area) {
+						mem.setAlignedInt32(n, RGBA.rgbaToBgra(data[n]))
+					}
+					//mem.setArrayInt32(0, data, 0, bmp.area)
 					return mem.byteBufferOrNull
 				}
 				is Bitmap8 -> {
@@ -438,7 +441,8 @@ abstract class AGAwtBase : AG() {
 		override fun actualSyncUpload(source: BitmapSourceBase, bmp: Bitmap?, requestMipmaps: Boolean) {
 			val Bpp = if (source.rgba) 4 else 1
 			val type = if (source.rgba) {
-				if (source is NativeImage) GL2.GL_BGRA else GL2.GL_RGBA
+				//if (source is NativeImage) GL2.GL_BGRA else GL2.GL_RGBA
+				GL2.GL_RGBA
 			} else {
 				GL2.GL_LUMINANCE
 			}
