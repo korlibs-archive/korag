@@ -141,7 +141,7 @@ class AGWebgl : AG() {
 					val data: Any = (bmp as? Bitmap32)?.data ?: ((bmp as? Bitmap8)?.data ?: ByteArray(width * height * Bpp))
 					val rdata = jsNew("Uint8Array", data.asJsDynamic().call("getBuffer"), 0, width * height * Bpp)
 					val type = if (rgba) gl["RGBA"] else gl["LUMINANCE"]
-					gl.call("pixelStorei", gl["UNPACK_PREMULTIPLY_ALPHA_WEBGL"], if (bmp is Bitmap32) (premultiplied xor bmp.premultiplied) else false)
+					gl.call("pixelStorei", gl["UNPACK_PREMULTIPLY_ALPHA_WEBGL"], premultiplied xor bmp.premultiplied)
 					gl.call("texImage2D", gl["TEXTURE_2D"], 0, type, width, height, 0, type, gl["UNSIGNED_BYTE"], rdata)
 				}
 			}
