@@ -11,21 +11,16 @@ import com.soywiz.korio.async.Promise
 import com.soywiz.korio.async.Signal
 import com.soywiz.korio.async.async
 import com.soywiz.korio.error.invalidOp
+import com.soywiz.korio.service.Services
 import com.soywiz.korio.util.Extra
 import com.soywiz.korio.util.Pool
 import com.soywiz.korma.geom.Size
 import java.io.Closeable
-import java.util.*
 
-val agFactory by lazy {
-	ServiceLoader.load(AGFactory::class.java).toList().filter(AGFactory::available).sortedBy(AGFactory::priority).firstOrNull()
-		?: invalidOp("Can't find AGFactory implementation")
-}
+val agFactory by lazy { Services.load(AGFactory::class.java) }
 
-abstract class AGFactory {
-	open val available: Boolean = true
+abstract class AGFactory : Services.Impl() {
 	open val supportsNativeFrame: Boolean = false
-	open val priority: Int = 4000
 
 	abstract fun create(): AG
 	open fun createFastWindow(title: String, width: Int, height: Int): AGWindow = invalidOp("Not supported")
