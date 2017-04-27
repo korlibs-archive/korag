@@ -144,6 +144,12 @@ abstract class AGAwtBase : AG() {
 
 	override fun createRenderBuffer(): RenderBuffer = AwtRenderBuffer()
 
+	private fun BlendEquation.toGl() = when (this) {
+		BlendEquation.ADD -> GL.GL_FUNC_ADD
+		BlendEquation.SUBTRACT -> GL.GL_FUNC_SUBTRACT
+		BlendEquation.REVERSE_SUBTRACT -> GL.GL_FUNC_REVERSE_SUBTRACT
+	}
+
 	private fun BlendFactor.toGl() = when (this) {
 		BlendFactor.DESTINATION_ALPHA -> GL.GL_DST_ALPHA
 		BlendFactor.DESTINATION_COLOR -> GL.GL_DST_COLOR
@@ -194,7 +200,7 @@ abstract class AGAwtBase : AG() {
 		vertexCount: Int,
 		indices: Buffer?,
 		offset: Int,
-		blending: BlendFactors,
+		blending: Blending,
 		uniforms: Map<Uniform, Any>,
 		stencil: StencilState,
 		colorMask: ColorMaskState
@@ -244,6 +250,7 @@ abstract class AGAwtBase : AG() {
 
 		if (blending.enabled) {
 			checkErrors { gl.glEnable(GL2.GL_BLEND) }
+			checkErrors { gl.glBlendEquationSeparate(blending.eqRGB.toGl(), blending.eqA.toGl()) }
 			checkErrors { gl.glBlendFuncSeparate(blending.srcRGB.toGl(), blending.dstRGB.toGl(), blending.srcA.toGl(), blending.dstA.toGl()) }
 		} else {
 			checkErrors { gl.glDisable(GL2.GL_BLEND) }

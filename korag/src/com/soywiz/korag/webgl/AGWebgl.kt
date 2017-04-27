@@ -229,6 +229,12 @@ class AGWebgl : AG() {
 		DrawType.TRIANGLE_STRIP -> gl["TRIANGLE_STRIP"].toInt()
 	}
 
+	private fun BlendEquation.toGl(): Int = when (this) {
+		AG.BlendEquation.ADD -> gl["FUNC_ADD"].toInt()
+		AG.BlendEquation.SUBTRACT -> gl["FUNC_SUBTRACT"].toInt()
+		AG.BlendEquation.REVERSE_SUBTRACT -> gl["FUNC_REVERSE_SUBTRACT"].toInt()
+	}
+
 	private fun BlendFactor.toGl(): Int = when (this) {
 		BlendFactor.DESTINATION_ALPHA -> gl["DST_ALPHA"].toInt()
 		BlendFactor.DESTINATION_COLOR -> gl["DST_COLOR"].toInt()
@@ -279,7 +285,7 @@ class AGWebgl : AG() {
 		vertexCount: Int,
 		indices: Buffer?,
 		offset: Int,
-		blending: BlendFactors,
+		blending: Blending,
 		uniforms: Map<Uniform, Any>,
 		stencil: StencilState,
 		colorMask: ColorMaskState
@@ -331,6 +337,7 @@ class AGWebgl : AG() {
 			gl.call("disable", gl["BLEND"])
 		} else {
 			gl.call("enable", gl["BLEND"])
+			gl.call("blendEquationSeparate", blending.eqRGB.toGl(), blending.eqA.toGl())
 			gl.call("blendFuncSeparate", blending.srcRGB.toGl(), blending.dstRGB.toGl(), blending.srcA.toGl(), blending.dstA.toGl())
 		}
 

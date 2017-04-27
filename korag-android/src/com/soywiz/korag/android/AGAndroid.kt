@@ -104,6 +104,12 @@ class AGAndroid : AG() {
 
 	override fun createBuffer(kind: Buffer.Kind): Buffer = AndroidBuffer(kind)
 
+	private fun BlendEquation.toGl() = when (this) {
+		BlendEquation.ADD -> GL.GL_FUNC_ADD
+		BlendEquation.SUBTRACT -> GL.GL_FUNC_SUBTRACT
+		BlendEquation.REVERSE_SUBTRACT -> GL.GL_FUNC_REVERSE_SUBTRACT
+	}
+
 	private fun BlendFactor.toGl() = when (this) {
 		BlendFactor.DESTINATION_ALPHA -> GL.GL_DST_ALPHA
 		BlendFactor.DESTINATION_COLOR -> GL.GL_DST_COLOR
@@ -125,7 +131,7 @@ class AGAndroid : AG() {
 		vertexCount: Int,
 		indices: Buffer?,
 		offset: Int,
-		blending: BlendFactors,
+		blending: Blending,
 		uniforms: Map<Uniform, Any>,
 		stencil: StencilState,
 		colorMask: ColorMaskState
@@ -178,6 +184,7 @@ class AGAndroid : AG() {
 			gl.glDisable(GL.GL_BLEND)
 		} else {
 			gl.glEnable(GL.GL_BLEND)
+			gl.glBlendEquationSeparate(blending.eqRGB.toGl(), blending.eqA.toGl())
 			gl.glBlendFuncSeparate(blending.srcRGB.toGl(), blending.dstRGB.toGl(), blending.srcA.toGl(), blending.dstA.toGl())
 		}
 

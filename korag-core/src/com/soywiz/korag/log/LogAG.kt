@@ -79,7 +79,7 @@ open class LogAG(
 		vertexCount: Int,
 		indices: Buffer?,
 		offset: Int,
-		blending: BlendFactors,
+		blending: Blending,
 		uniforms: Map<Uniform, Any>,
 		stencil: StencilState,
 		colorMask: ColorMaskState

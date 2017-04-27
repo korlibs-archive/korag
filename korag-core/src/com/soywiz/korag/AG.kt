@@ -82,6 +82,10 @@ abstract class AG : Extra by Extra.Mixin() {
 	open fun dispose() {
 	}
 
+	enum class BlendEquation {
+		ADD, SUBTRACT, REVERSE_SUBTRACT
+	}
+
 	enum class BlendFactor {
 		DESTINATION_ALPHA,
 		DESTINATION_COLOR,
@@ -95,21 +99,24 @@ abstract class AG : Extra by Extra.Mixin() {
 		ZERO;
 	}
 
-	data class BlendFactors(val srcRGB: BlendFactor, val dstRGB: BlendFactor, val srcA: BlendFactor, val dstA: BlendFactor) {
-		constructor(src: BlendFactor, dst: BlendFactor) : this(src, dst, src, dst)
+	data class Blending(val srcRGB: BlendFactor, val dstRGB: BlendFactor, val srcA: BlendFactor = srcRGB, val dstA: BlendFactor = dstRGB, val eqRGB: BlendEquation = BlendEquation.ADD, val eqA: BlendEquation = eqRGB) {
+
+		constructor(src: BlendFactor, dst: BlendFactor, eq: BlendEquation = BlendEquation.ADD) : this(src, dst, src, dst, eq, eq)
 
 		val disabled: Boolean get() = srcRGB == BlendFactor.ONE && dstRGB == BlendFactor.ZERO && srcA == BlendFactor.ONE && dstA == BlendFactor.ZERO
 		val enabled: Boolean get() = !disabled
 
 		companion object {
-			// http://www.learnopengles.com/tag/additive-blending/
-			val REPLACE = BlendFactors(BlendFactor.ONE, BlendFactor.ZERO, BlendFactor.ONE, BlendFactor.ZERO)
-			val NORMAL = BlendFactors(BlendFactor.SOURCE_ALPHA, BlendFactor.ONE_MINUS_SOURCE_ALPHA, BlendFactor.ONE, BlendFactor.ONE_MINUS_SOURCE_ALPHA)
-			val ADD = BlendFactors(BlendFactor.ONE, BlendFactor.ONE, BlendFactor.ONE, BlendFactor.ONE)
+			val NORMAL = Blending(BlendFactor.SOURCE_ALPHA, BlendFactor.ONE_MINUS_SOURCE_ALPHA, BlendFactor.ONE, BlendFactor.ONE_MINUS_SOURCE_ALPHA)
 
-			val REPLACE_PREMULT = BlendFactors(BlendFactor.ONE, BlendFactor.ZERO, BlendFactor.ONE, BlendFactor.ZERO)
-			val NORMAL_PREMULT = BlendFactors(BlendFactor.ONE, BlendFactor.ONE_MINUS_SOURCE_ALPHA, BlendFactor.ONE, BlendFactor.ONE_MINUS_SOURCE_ALPHA)
-			val ADD_PREMULT = BlendFactors(BlendFactor.ONE, BlendFactor.ONE, BlendFactor.ONE, BlendFactor.ONE)
+			// http://www.learnopengles.com/tag/additive-blending/
+			//val REPLACE = Blending(BlendFactor.ONE, BlendFactor.ZERO, BlendFactor.ONE, BlendFactor.ZERO)
+			//val NORMAL = Blending(BlendFactor.SOURCE_ALPHA, BlendFactor.ONE_MINUS_SOURCE_ALPHA, BlendFactor.ONE, BlendFactor.ONE_MINUS_SOURCE_ALPHA)
+			//val ADD = Blending(BlendFactor.ONE, BlendFactor.ONE, BlendFactor.ONE, BlendFactor.ONE)
+			//
+			//val REPLACE_PREMULT = Blending(BlendFactor.ONE, BlendFactor.ZERO, BlendFactor.ONE, BlendFactor.ZERO)
+			//val NORMAL_PREMULT = Blending(BlendFactor.ONE, BlendFactor.ONE_MINUS_SOURCE_ALPHA, BlendFactor.ONE, BlendFactor.ONE_MINUS_SOURCE_ALPHA)
+			//val ADD_PREMULT = Blending(BlendFactor.ONE, BlendFactor.ONE, BlendFactor.ONE, BlendFactor.ONE)
 		}
 	}
 
@@ -355,7 +362,7 @@ abstract class AG : Extra by Extra.Mixin() {
 		vertexCount: Int,
 		indices: Buffer? = null,
 		offset: Int = 0,
-		blending: BlendFactors = BlendFactors.NORMAL,
+		blending: Blending = Blending.NORMAL,
 		uniforms: Map<Uniform, Any> = mapOf(),
 		stencil: StencilState = dummyStencilState,
 		colorMask: ColorMaskState = dummyColorMaskState
