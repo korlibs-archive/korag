@@ -123,6 +123,8 @@ abstract class AG : Extra by Extra.Mixin() {
 		companion object {
 			val NULL = SyncBitmapSource(true, 0, 0) { null }
 		}
+
+		override fun toString(): String = "SyncBitmapSource(rgba=$rgba, width=$width, height=$height)"
 	}
 
 	class AsyncBitmapSource(override val rgba: Boolean, override val width: Int, override val height: Int, val gen: suspend () -> Bitmap?) : BitmapSourceBase {
