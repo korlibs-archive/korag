@@ -26,7 +26,6 @@ import com.soywiz.korio.error.unsupported
 import com.soywiz.korio.util.Once
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
-import java.awt.event.MouseListener
 import java.awt.event.MouseMotionAdapter
 import java.awt.image.DataBufferInt
 import java.io.Closeable
@@ -535,6 +534,12 @@ class AGAwt : AGAwtBase(), AGContainer {
 	override val onMouseUp: Signal<Unit> = Signal()
 	override val onMouseDown: Signal<Unit> = Signal()
 
+	override fun dispose() {
+		glcanvas.removeMouseListener(mouseEventListener)
+		glcanvas.removeMouseMotionListener(mouseEventListener)
+		glcanvas.disposeGLEventListener(glEventListener, true)
+	}
+
 	override fun repaint() {
 		glcanvas.repaint()
 		//if (initialized) {
@@ -551,6 +556,80 @@ class AGAwt : AGAwtBase(), AGContainer {
 		this.mouseY = e.y
 	}
 
+	val glEventListener = object : GLEventListener {
+		override fun reshape(d: GLAutoDrawable, x: Int, y: Int, width: Int, height: Int) {
+			setAutoDrawable(d)
+
+			val scaleX = glcanvas.width.toDouble() / glcanvas.surfaceWidth.toDouble()
+			val scaleY = glcanvas.height.toDouble() / glcanvas.surfaceHeight.toDouble()
+
+			pixelDensity = (scaleX + scaleY) * 0.5
+
+			//println("scale($scaleX, $scaleY)")
+
+			backWidth = (width * pixelDensity).toInt()
+			backHeight = (height * pixelDensity).toInt()
+			//d.gl.glViewport(0, 0, width, height)
+			resized()
+			//println("a")
+		}
+
+		var onReadyOnce = Once()
+
+		override fun display(d: GLAutoDrawable) {
+			setAutoDrawable(d)
+
+			//while (true) {
+			//	val callback = synchronized(queue) { if (queue.isNotEmpty()) queue.remove() else null } ?: break
+			//	callback(gl)
+			//}
+
+			onReadyOnce {
+				ready()
+			}
+			onRender(awtBase)
+			checkErrors { gl.glFlush() }
+
+			//gl.glClearColor(1f, 1f, 0f, 1f)
+			//gl.glClear(GL.GL_COLOR_BUFFER_BIT)
+			//d.swapBuffers()
+		}
+
+		override fun init(d: GLAutoDrawable) {
+			setAutoDrawable(d)
+			//println("c")
+		}
+
+		override fun dispose(d: GLAutoDrawable) {
+			setAutoDrawable(d)
+			//println("d")
+		}
+	}
+
+	val mouseMotionEventListener = object : MouseMotionAdapter() {
+		override fun mouseMoved(e: MouseEvent) {
+			updateMouse(e)
+			onMouseOver(Unit)
+		}
+
+		override fun mouseDragged(e: MouseEvent) {
+			updateMouse(e)
+			onMouseOver(Unit)
+		}
+	}
+
+	val mouseEventListener = object : MouseAdapter() {
+		override fun mouseReleased(e: MouseEvent) {
+			updateMouse(e)
+			onMouseUp(Unit)
+		}
+
+		override fun mousePressed(e: MouseEvent) {
+			updateMouse(e)
+			onMouseDown(Unit)
+		}
+	}
+
 	init {
 		//((glcanvas as JoglNewtAwtCanvas).getNativeWindow() as JAWTWindow).setSurfaceScale(new float[] {2, 2});
 		//glcanvas.nativeSurface.
@@ -558,78 +637,9 @@ class AGAwt : AGAwtBase(), AGContainer {
 
 
 
-		glcanvas.addMouseMotionListener(object : MouseMotionAdapter() {
-			override fun mouseMoved(e: MouseEvent) {
-				updateMouse(e)
-				onMouseOver(Unit)
-			}
-
-			override fun mouseDragged(e: MouseEvent) {
-				updateMouse(e)
-				onMouseOver(Unit)
-			}
-		})
-		glcanvas.addMouseListener(object : MouseAdapter() {
-			override fun mouseReleased(e: MouseEvent) {
-				updateMouse(e)
-				onMouseUp(Unit)
-			}
-
-			override fun mousePressed(e: MouseEvent) {
-				updateMouse(e)
-				onMouseDown(Unit)
-			}
-		})
-
-		glcanvas.addGLEventListener(object : GLEventListener {
-			override fun reshape(d: GLAutoDrawable, x: Int, y: Int, width: Int, height: Int) {
-				setAutoDrawable(d)
-
-				val scaleX = glcanvas.width.toDouble() / glcanvas.surfaceWidth.toDouble()
-				val scaleY = glcanvas.height.toDouble() / glcanvas.surfaceHeight.toDouble()
-
-				pixelDensity = (scaleX + scaleY) * 0.5
-
-				//println("scale($scaleX, $scaleY)")
-
-				backWidth = (width * pixelDensity).toInt()
-				backHeight = (height * pixelDensity).toInt()
-				//d.gl.glViewport(0, 0, width, height)
-				resized()
-				//println("a")
-			}
-
-			var onReadyOnce = Once()
-
-			override fun display(d: GLAutoDrawable) {
-				setAutoDrawable(d)
-
-				//while (true) {
-				//	val callback = synchronized(queue) { if (queue.isNotEmpty()) queue.remove() else null } ?: break
-				//	callback(gl)
-				//}
-
-				onReadyOnce {
-					ready()
-				}
-				onRender(awtBase)
-				checkErrors { gl.glFlush() }
-
-				//gl.glClearColor(1f, 1f, 0f, 1f)
-				//gl.glClear(GL.GL_COLOR_BUFFER_BIT)
-				//d.swapBuffers()
-			}
-
-			override fun init(d: GLAutoDrawable) {
-				setAutoDrawable(d)
-				//println("c")
-			}
-
-			override fun dispose(d: GLAutoDrawable) {
-				setAutoDrawable(d)
-				//println("d")
-			}
-		})
+		glcanvas.addMouseMotionListener(mouseMotionEventListener)
+		glcanvas.addMouseListener(mouseEventListener)
+		glcanvas.addGLEventListener(glEventListener)
 	}
 }
 
