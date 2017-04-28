@@ -5,6 +5,7 @@ import com.jogamp.opengl.*
 import com.jogamp.opengl.awt.GLCanvas
 import com.jtransc.FastMemory
 import com.soywiz.korag.AG
+import com.soywiz.korag.AGContainer
 import com.soywiz.korag.AGFactory
 import com.soywiz.korag.AGWindow
 import com.soywiz.korag.geom.Matrix4
@@ -23,6 +24,10 @@ import com.soywiz.korio.async.Signal
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.error.unsupported
 import com.soywiz.korio.util.Once
+import java.awt.event.MouseAdapter
+import java.awt.event.MouseEvent
+import java.awt.event.MouseListener
+import java.awt.event.MouseMotionAdapter
 import java.awt.image.DataBufferInt
 import java.io.Closeable
 import java.nio.ByteBuffer
@@ -519,9 +524,16 @@ abstract class AGAwtBase : AG() {
 	}
 }
 
-class AGAwt : AGAwtBase() {
+class AGAwt : AGAwtBase(), AGContainer {
 	val glcanvas = GLCanvas(glcapabilities)
 	override val nativeComponent = glcanvas
+
+	override val ag: AG = this
+	override var mouseX: Int = 0
+	override var mouseY: Int = 0
+	override val onMouseOver: Signal<Unit> = Signal()
+	override val onMouseUp: Signal<Unit> = Signal()
+	override val onMouseDown: Signal<Unit> = Signal()
 
 	override fun repaint() {
 		glcanvas.repaint()
@@ -534,10 +546,40 @@ class AGAwt : AGAwtBase() {
 		onResized(Unit)
 	}
 
+	private fun updateMouse(e: MouseEvent) {
+		this.mouseX = e.x
+		this.mouseY = e.y
+	}
+
 	init {
 		//((glcanvas as JoglNewtAwtCanvas).getNativeWindow() as JAWTWindow).setSurfaceScale(new float[] {2, 2});
 		//glcanvas.nativeSurface.
 		//println(glcanvas.nativeSurface.convertToPixelUnits(intArrayOf(1000)).toList())
+
+
+
+		glcanvas.addMouseMotionListener(object : MouseMotionAdapter() {
+			override fun mouseMoved(e: MouseEvent) {
+				updateMouse(e)
+				onMouseOver(Unit)
+			}
+
+			override fun mouseDragged(e: MouseEvent) {
+				updateMouse(e)
+				onMouseOver(Unit)
+			}
+		})
+		glcanvas.addMouseListener(object : MouseAdapter() {
+			override fun mouseReleased(e: MouseEvent) {
+				updateMouse(e)
+				onMouseUp(Unit)
+			}
+
+			override fun mousePressed(e: MouseEvent) {
+				updateMouse(e)
+				onMouseDown(Unit)
+			}
+		})
 
 		glcanvas.addGLEventListener(object : GLEventListener {
 			override fun reshape(d: GLAutoDrawable, x: Int, y: Int, width: Int, height: Int) {
