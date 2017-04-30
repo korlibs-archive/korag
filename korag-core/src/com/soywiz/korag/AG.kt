@@ -10,12 +10,14 @@ import com.soywiz.korim.color.Colors
 import com.soywiz.korio.async.Promise
 import com.soywiz.korio.async.Signal
 import com.soywiz.korio.async.async
+import com.soywiz.korio.coroutine.CoroutineContext
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.service.Services
 import com.soywiz.korio.util.Extra
 import com.soywiz.korio.util.Pool
 import com.soywiz.korma.geom.Size
 import java.io.Closeable
+import kotlin.coroutines.experimental.EmptyCoroutineContext
 
 val agFactory by lazy { Services.load(AGFactory::class.java) }
 
@@ -129,9 +131,9 @@ abstract class AG : Extra by Extra.Mixin() {
 		override fun toString(): String = "SyncBitmapSource(rgba=$rgba, width=$width, height=$height)"
 	}
 
-	class AsyncBitmapSource(override val rgba: Boolean, override val width: Int, override val height: Int, val gen: suspend () -> Bitmap?) : BitmapSourceBase {
+	class AsyncBitmapSource(val coroutineContext: CoroutineContext, override val rgba: Boolean, override val width: Int, override val height: Int, val gen: suspend () -> Bitmap?) : BitmapSourceBase {
 		companion object {
-			val NULL = AsyncBitmapSource(true, 0, 0) { null }
+			val NULL = AsyncBitmapSource(EmptyCoroutineContext, true, 0, 0) { null }
 		}
 	}
 
@@ -177,7 +179,7 @@ abstract class AG : Extra by Extra.Mixin() {
 							generated = true
 						}
 						is AsyncBitmapSource -> {
-							async {
+							async(source.coroutineContext) {
 								tempBitmap = source.gen()
 								generated = true
 							}
