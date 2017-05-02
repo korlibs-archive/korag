@@ -4,10 +4,7 @@ import com.jogamp.newt.opengl.GLWindow
 import com.jogamp.opengl.*
 import com.jogamp.opengl.awt.GLCanvas
 import com.jtransc.FastMemory
-import com.soywiz.korag.AG
-import com.soywiz.korag.AGContainer
-import com.soywiz.korag.AGFactory
-import com.soywiz.korag.AGWindow
+import com.soywiz.korag.*
 import com.soywiz.korag.geom.Matrix4
 import com.soywiz.korag.shader.Program
 import com.soywiz.korag.shader.Uniform
@@ -20,13 +17,10 @@ import com.soywiz.korim.bitmap.Bitmap32
 import com.soywiz.korim.bitmap.Bitmap8
 import com.soywiz.korim.bitmap.NativeImage
 import com.soywiz.korim.color.RGBA
-import com.soywiz.korio.async.Signal
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.error.unsupported
 import com.soywiz.korio.util.Once
-import java.awt.event.MouseAdapter
-import java.awt.event.MouseEvent
-import java.awt.event.MouseMotionAdapter
+import java.awt.event.*
 import java.awt.image.DataBufferInt
 import java.io.Closeable
 import java.nio.ByteBuffer
@@ -52,11 +46,7 @@ class AGFactoryAwt : AGFactory() {
 		})
 
 		return object : AGWindow() {
-			override val mouseX: Int = 0
-			override val mouseY: Int = 0
-			override val onMouseOver: Signal<Unit> = Signal()
-			override val onMouseUp: Signal<Unit> = Signal()
-			override val onMouseDown: Signal<Unit> = Signal()
+			override val agInput: AGInput  = AGInput()
 			//override val onResized: Signal<Unit> = Signal()
 
 			override fun repaint() = Unit
@@ -528,15 +518,21 @@ class AGAwt : AGAwtBase(), AGContainer {
 	override val nativeComponent = glcanvas
 
 	override val ag: AG = this
+
+	override val agInput: AGInput = AGInput()
+
+	/*
 	override var mouseX: Int = 0
 	override var mouseY: Int = 0
 	override val onMouseOver: Signal<Unit> = Signal()
 	override val onMouseUp: Signal<Unit> = Signal()
 	override val onMouseDown: Signal<Unit> = Signal()
+	*/
 
 	override fun dispose() {
 		glcanvas.removeMouseListener(mouseEventListener)
 		glcanvas.removeMouseMotionListener(mouseEventListener)
+		glcanvas.removeKeyListener(keyListener)
 		glcanvas.disposeGLEventListener(glEventListener, true)
 	}
 
@@ -552,8 +548,12 @@ class AGAwt : AGAwtBase(), AGContainer {
 	}
 
 	private fun updateMouse(e: MouseEvent) {
-		this.mouseX = e.x
-		this.mouseY = e.y
+		this.agInput.mouseEvent.x = e.x
+		this.agInput.mouseEvent.y = e.y
+	}
+
+	private fun updateKey(e: KeyEvent) {
+		this.agInput.keyEvent.keyCode = e.keyCode
 	}
 
 	val glEventListener = object : GLEventListener {
@@ -609,24 +609,41 @@ class AGAwt : AGAwtBase(), AGContainer {
 	val mouseMotionEventListener = object : MouseMotionAdapter() {
 		override fun mouseMoved(e: MouseEvent) {
 			updateMouse(e)
-			onMouseOver(Unit)
+			agInput.onMouseOver(agInput.mouseEvent)
 		}
 
 		override fun mouseDragged(e: MouseEvent) {
 			updateMouse(e)
-			onMouseOver(Unit)
+			agInput.onMouseOver(agInput.mouseEvent)
 		}
 	}
 
 	val mouseEventListener = object : MouseAdapter() {
 		override fun mouseReleased(e: MouseEvent) {
 			updateMouse(e)
-			onMouseUp(Unit)
+			agInput.onMouseUp(agInput.mouseEvent)
 		}
 
 		override fun mousePressed(e: MouseEvent) {
 			updateMouse(e)
-			onMouseDown(Unit)
+			agInput.onMouseDown(agInput.mouseEvent)
+		}
+	}
+
+	val keyListener =  object : KeyAdapter() {
+		override fun keyTyped(e: KeyEvent) {
+			updateKey(e)
+			agInput.onKeyTyped(agInput.keyEvent)
+		}
+
+		override fun keyPressed(e: KeyEvent) {
+			updateKey(e)
+			agInput.onKeyDown(agInput.keyEvent)
+		}
+
+		override fun keyReleased(e: KeyEvent) {
+			updateKey(e)
+			agInput.onKeyUp(agInput.keyEvent)
 		}
 	}
 
@@ -635,11 +652,10 @@ class AGAwt : AGAwtBase(), AGContainer {
 		//glcanvas.nativeSurface.
 		//println(glcanvas.nativeSurface.convertToPixelUnits(intArrayOf(1000)).toList())
 
-
-
 		glcanvas.addMouseMotionListener(mouseMotionEventListener)
 		glcanvas.addMouseListener(mouseEventListener)
 		glcanvas.addGLEventListener(glEventListener)
+		glcanvas.addKeyListener(keyListener)
 	}
 }
 

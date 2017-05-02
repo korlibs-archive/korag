@@ -28,14 +28,33 @@ abstract class AGFactory : Services.Impl() {
 	open fun createFastWindow(title: String, width: Int, height: Int): AGWindow = invalidOp("Not supported")
 }
 
+open class AGInput {
+	data class MouseEvent(var buttons: Int = 0, var x: Int = 0, var y: Int = 0)
+	data class KeyEvent(var keyCode: Int = 0)
+	data class GamepadEvent(var padIndex: Int = 0, var button: Int = 0)
+
+	val mouseEvent = MouseEvent()
+	val keyEvent = KeyEvent()
+	val gamepadEvent = GamepadEvent()
+
+	open val mouseX: Int get() = mouseEvent.x
+	open val mouseY: Int get() = mouseEvent.y
+	open val onMouseOver: Signal<MouseEvent> = Signal()
+	open val onMouseUp: Signal<MouseEvent> = Signal()
+	open val onMouseDown: Signal<MouseEvent> = Signal()
+
+	open val onKeyDown: Signal<KeyEvent> = Signal()
+	open val onKeyUp: Signal<KeyEvent> = Signal()
+	open val onKeyTyped: Signal<KeyEvent> = Signal()
+
+	open val onGamepadButtonDown: Signal<GamepadEvent> = Signal()
+	open val onGamepadButtonUp: Signal<GamepadEvent> = Signal()
+}
+
 interface AGContainer {
 	val ag: AG
 
-	val mouseX: Int
-	val mouseY: Int
-	val onMouseOver: Signal<Unit>
-	val onMouseUp: Signal<Unit>
-	val onMouseDown: Signal<Unit>
+	val agInput: AGInput
 
 	//data class Resized(var width: Int, var height: Int) {
 	//	fun setSize(width: Int, height: Int): Resized = this.apply {
