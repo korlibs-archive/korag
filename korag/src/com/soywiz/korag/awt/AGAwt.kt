@@ -81,18 +81,19 @@ abstract class AGAwtBase : AG() {
 	override fun createBuffer(kind: Buffer.Kind): Buffer = AwtBuffer(kind)
 
 	inner class AwtRenderBuffer : RenderBuffer() {
+		var cachedVersion = -1
 		val wtex = tex as AwtTexture
 
 		val renderbuffer = IntBuffer.allocate(1)
 		val framebuffer = IntBuffer.allocate(1)
 		var oldViewport = IntArray(4)
 
-		init {
-			gl.glGenRenderbuffers(1, renderbuffer)
-			gl.glGenFramebuffers(1, framebuffer)
-		}
-
 		override fun start(width: Int, height: Int) {
+			if (cachedVersion != contextVersion) {
+				cachedVersion = contextVersion
+				gl.glGenRenderbuffers(1, renderbuffer)
+				gl.glGenFramebuffers(1, framebuffer)
+			}
 			//gl.getparameter
 			gl.glGetIntegerv(GL.GL_VIEWPORT, oldViewport, 0)
 			//println("oldViewport:${oldViewport.toList()}")
@@ -293,25 +294,23 @@ abstract class AGAwtBase : AG() {
 	fun getProgram(program: Program): AwtProgram = programs.getOrPut(program) { AwtProgram(gl, program) }
 
 	inner class AwtProgram(val gl: GL2, val program: Program) : Closeable {
-		val id = checkErrors { gl.glCreateProgram() }
-		val fragmentShaderId = createShader(GL2.GL_FRAGMENT_SHADER, program.fragment.toGlSlString())
-		val vertexShaderId = createShader(GL2.GL_VERTEX_SHADER, program.vertex.toGlSlString())
+		var cachedVersion = -1
+		var id: Int = 0
+		var fragmentShaderId: Int = 0
+		var vertexShaderId: Int = 0
 
-		init {
-			checkErrors { gl.glAttachShader(id, fragmentShaderId) }
-			checkErrors { gl.glAttachShader(id, vertexShaderId) }
-			checkErrors { gl.glLinkProgram(id) }
-			val out = IntArray(1)
-			checkErrors { gl.glGetProgramiv(id, GL2.GL_LINK_STATUS, out, 0) }
-			//if (out[0] != GL2.GL_TRUE) {
-			//	val ba = ByteArray(1024)
-			//	val ia = intArrayOf(1024)
-			//	gl.glGetProgramInfoLog(id, ba.size, ia, 0, ba, 0)
-			//	//println(ia[0])
-			//	val msg = ba.toString(Charsets.UTF_8)
-			//	// gl.glGetShaderInfoLog()
-			//	throw RuntimeException("Error Linking Program : '$msg' programId=$id")
-			//}
+		private fun ensure() {
+			if (cachedVersion != contextVersion) {
+				cachedVersion = contextVersion
+				id = checkErrors { gl.glCreateProgram() }
+				fragmentShaderId = createShader(GL2.GL_FRAGMENT_SHADER, program.fragment.toGlSlString())
+				vertexShaderId = createShader(GL2.GL_VERTEX_SHADER, program.vertex.toGlSlString())
+				checkErrors { gl.glAttachShader(id, fragmentShaderId) }
+				checkErrors { gl.glAttachShader(id, vertexShaderId) }
+				checkErrors { gl.glLinkProgram(id) }
+				val out = IntArray(1)
+				checkErrors { gl.glGetProgramiv(id, GL2.GL_LINK_STATUS, out, 0) }
+			}
 		}
 
 		fun createShader(type: Int, str: String): Int {
@@ -329,10 +328,12 @@ abstract class AGAwtBase : AG() {
 		}
 
 		fun use() {
+			ensure()
 			checkErrors { gl.glUseProgram(id) }
 		}
 
 		fun unuse() {
+			ensure()
 			checkErrors { gl.glUseProgram(0) }
 		}
 
@@ -360,6 +361,7 @@ abstract class AGAwtBase : AG() {
 	override fun createTexture(): Texture = AwtTexture(this.gl)
 
 	inner class AwtBuffer(kind: Buffer.Kind) : Buffer(kind) {
+		var cachedVersion = -1
 		private var id = -1
 		val glKind = if (kind == Buffer.Kind.INDEX) GL.GL_ELEMENT_ARRAY_BUFFER else GL.GL_ARRAY_BUFFER
 
@@ -373,6 +375,10 @@ abstract class AGAwtBase : AG() {
 		}
 
 		fun getGlId(gl: GL2): Int {
+			if (cachedVersion != contextVersion) {
+				cachedVersion = contextVersion
+				id = -1
+			}
 			if (id < 0) {
 				val out = IntArray(1)
 				checkErrors { gl.glGenBuffers(1, out, 0) }
@@ -401,11 +407,16 @@ abstract class AGAwtBase : AG() {
 	}
 
 	inner class AwtTexture(val gl: GL2) : Texture() {
+		var cachedVersion = -1
 		val texIds = IntArray(1)
 
-		val tex by lazy {
-			checkErrors { gl.glGenTextures(1, texIds, 0) }
-			texIds[0]
+		val tex: Int get() {
+			if (cachedVersion != contextVersion) {
+				cachedVersion = contextVersion
+				invalidate()
+				checkErrors { gl.glGenTextures(1, texIds, 0) }
+			}
+			return texIds[0]
 		}
 
 		fun createBufferForBitmap(bmp: Bitmap?): ByteBuffer {
@@ -596,6 +607,7 @@ class AGAwt : AGAwtBase(), AGContainer {
 		}
 
 		override fun init(d: GLAutoDrawable) {
+			contextVersion++
 			setAutoDrawable(d)
 			//println("c")
 		}

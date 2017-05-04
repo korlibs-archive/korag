@@ -71,6 +71,7 @@ abstract class AGWindow : AGContainer {
 }
 
 abstract class AG : Extra by Extra.Mixin() {
+	var contextVersion = 0
 	abstract val nativeComponent: Any
 	open var backWidth: Int = 640
 	open var backHeight: Int = 480
@@ -166,6 +167,12 @@ abstract class AG : Extra by Extra.Mixin() {
 		private var generated: Boolean = false
 		private var tempBitmap: Bitmap? = null
 		var ready: Boolean = false; private set
+
+		protected fun invalidate() {
+			uploaded = false
+			generating = false
+			generated = false
+		}
 
 		fun upload(bmp: Bitmap?, mipmaps: Boolean = false): Texture {
 			return upload(if (bmp != null) SyncBitmapSource(rgba = bmp.bpp > 8, width = bmp.width, height = bmp.height) { bmp } else SyncBitmapSource.NULL, mipmaps)
