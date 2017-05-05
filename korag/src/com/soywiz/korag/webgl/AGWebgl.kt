@@ -1,5 +1,6 @@
 package com.soywiz.korag.webgl
 
+import com.jogamp.opengl.GL
 import com.jtransc.JTranscArrays
 import com.jtransc.annotation.JTranscMethodBody
 import com.jtransc.io.JTranscConsole
@@ -59,14 +60,22 @@ class AGWebgl : AG() {
 	}
 
 	override fun clear(color: Int, depth: Float, stencil: Int, clearColor: Boolean, clearDepth: Boolean, clearStencil: Boolean) {
-		gl.call("clearColor", RGBA.getRf(color), RGBA.getGf(color), RGBA.getBf(color), RGBA.getAf(color))
-		gl.call("clearDepth", depth)
-		gl.call("clearStencil", stencil)
-		var flags = 0
-		if (clearColor) flags = flags or gl["COLOR_BUFFER_BIT"].toInt()
-		if (clearDepth) flags = flags or gl["DEPTH_BUFFER_BIT"].toInt()
-		if (clearStencil) flags = flags or gl["STENCIL_BUFFER_BIT"].toInt()
-		gl.call("clear", flags)
+		var bits = 0
+		gl.call("disable", gl["SCISSOR_TEST"])
+		if (clearColor) {
+			bits = bits or gl["COLOR_BUFFER_BIT"].toInt()
+			gl.call("clearColor", RGBA.getRf(color), RGBA.getGf(color), RGBA.getBf(color), RGBA.getAf(color))
+		}
+		if (clearDepth) {
+			bits = bits or gl["DEPTH_BUFFER_BIT"].toInt()
+			gl.call("clearDepth", depth)
+		}
+		if (clearStencil) {
+			bits = bits or gl["STENCIL_BUFFER_BIT"].toInt()
+			gl.call("stencilMask", -1)
+			gl.call("clearStencil", stencil)
+		}
+		gl.call("clear", bits)
 	}
 
 	inner class WebglProgram(val p: Program) : Closeable {

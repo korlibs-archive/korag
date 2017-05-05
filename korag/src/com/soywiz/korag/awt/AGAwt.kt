@@ -346,15 +346,21 @@ abstract class AGAwtBase : AG() {
 
 	override fun clear(color: Int, depth: Float, stencil: Int, clearColor: Boolean, clearDepth: Boolean, clearStencil: Boolean) {
 		//println("CLEAR: $color, $depth")
-		val r = RGBA.getRf(color)
-		val g = RGBA.getGf(color)
-		val b = RGBA.getBf(color)
-		val a = RGBA.getAf(color)
 		var bits = 0
-		if (clearColor) bits = bits or GL.GL_COLOR_BUFFER_BIT
-		if (clearDepth) bits = bits or GL.GL_DEPTH_BUFFER_BIT
-		if (clearStencil) bits = bits or GL.GL_STENCIL_BUFFER_BIT
-		checkErrors { gl.glClearColor(r, g, b, a) }
+		checkErrors { gl.glDisable(GL.GL_SCISSOR_TEST) }
+		if (clearColor) {
+			bits = bits or GL.GL_COLOR_BUFFER_BIT
+			checkErrors { gl.glClearColor(RGBA.getRf(color), RGBA.getGf(color), RGBA.getBf(color), RGBA.getAf(color)) }
+		}
+		if (clearDepth) {
+			bits = bits or GL.GL_DEPTH_BUFFER_BIT
+			checkErrors { gl.glClearDepth(depth.toDouble()) }
+		}
+		if (clearStencil) {
+			bits = bits or GL.GL_STENCIL_BUFFER_BIT
+			checkErrors { gl.glStencilMask(-1) }
+			checkErrors { gl.glClearStencil(stencil) }
+		}
 		checkErrors { gl.glClear(bits) }
 	}
 
@@ -516,8 +522,8 @@ abstract class AGAwtBase : AG() {
 		if (checkErrors) {
 			val error = gl.glGetError()
 			if (error != GL.GL_NO_ERROR) {
-				println("OpenGL error: $error")
-				throw RuntimeException("OpenGL error: $error")
+				System.err.println("OpenGL error: $error")
+				//throw RuntimeException("OpenGL error: $error")
 			}
 		}
 		return res
