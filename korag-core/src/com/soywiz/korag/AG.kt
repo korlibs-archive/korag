@@ -32,10 +32,12 @@ open class AGInput {
 	data class MouseEvent(var buttons: Int = 0, var x: Int = 0, var y: Int = 0)
 	data class KeyEvent(var keyCode: Int = 0)
 	data class GamepadEvent(var padIndex: Int = 0, var button: Int = 0)
+	data class TouchEvent(var id: Int = 0, var x: Int = 0, var y: Int = 0)
 
 	val mouseEvent = MouseEvent()
 	val keyEvent = KeyEvent()
 	val gamepadEvent = GamepadEvent()
+	val touchEvent = TouchEvent()
 
 	open val mouseX: Int get() = mouseEvent.x
 	open val mouseY: Int get() = mouseEvent.y
@@ -46,6 +48,10 @@ open class AGInput {
 	open val onKeyDown: Signal<KeyEvent> = Signal()
 	open val onKeyUp: Signal<KeyEvent> = Signal()
 	open val onKeyTyped: Signal<KeyEvent> = Signal()
+
+	open val onTouchStart: Signal<TouchEvent> = Signal()
+	open val onTouchEnd: Signal<TouchEvent> = Signal()
+	open val onTouchMove: Signal<TouchEvent> = Signal()
 
 	open val onGamepadButtonDown: Signal<GamepadEvent> = Signal()
 	open val onGamepadButtonUp: Signal<GamepadEvent> = Signal()
