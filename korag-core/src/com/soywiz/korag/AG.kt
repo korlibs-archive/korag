@@ -44,6 +44,7 @@ open class AGInput {
 	open val onMouseOver: Signal<MouseEvent> = Signal()
 	open val onMouseUp: Signal<MouseEvent> = Signal()
 	open val onMouseDown: Signal<MouseEvent> = Signal()
+	open val onMouseClick: Signal<MouseEvent> = Signal()
 
 	open val onKeyDown: Signal<KeyEvent> = Signal()
 	open val onKeyUp: Signal<KeyEvent> = Signal()

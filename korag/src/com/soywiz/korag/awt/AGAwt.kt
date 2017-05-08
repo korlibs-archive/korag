@@ -646,6 +646,11 @@ class AGAwt : AGAwtBase(), AGContainer {
 			updateMouse(e)
 			agInput.onMouseDown(agInput.mouseEvent)
 		}
+
+		override fun mouseClicked(e: MouseEvent) {
+			updateMouse(e)
+			agInput.onMouseClick(agInput.mouseEvent)
+		}
 	}
 
 	val keyListener =  object : KeyAdapter() {
