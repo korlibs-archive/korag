@@ -410,7 +410,7 @@ abstract class AG : Extra by Extra.Mixin() {
 
 	open fun disposeTemporalPerFrameStuff() = Unit
 
-	val frameRenderBuffers = java.util.ArrayList<RenderBuffer>()
+	val frameRenderBuffers = java.util.LinkedHashSet<RenderBuffer>()
 	val renderBuffers = Pool<RenderBuffer>() { createRenderBuffer() }
 
 	open inner class RenderBuffer : Closeable {
@@ -444,7 +444,11 @@ abstract class AG : Extra by Extra.Mixin() {
 
 	open fun clear(color: Int = Colors.TRANSPARENT_BLACK, depth: Float = 0f, stencil: Int = 0, clearColor: Boolean = true, clearDepth: Boolean = true, clearStencil: Boolean = true) = Unit
 
-	class RenderTexture(val tex: Texture, val width: Int, val height: Int)
+	class RenderTexture(val tex: Texture, val width: Int, val height: Int, val closeAction: () -> Unit) : Closeable {
+		override fun close() {
+			closeAction()
+		}
+	}
 
 	var renderingToTexture = false
 
@@ -478,12 +482,14 @@ abstract class AG : Extra by Extra.Mixin() {
 			rb.end()
 			renderingToTexture = oldRendering
 		}
-		return RenderTexture(rb.tex, width, height)
+		return RenderTexture(rb.tex, width, height) {
+			frameRenderBuffers -= rb
+			renderBuffers.free(rb)
+		}
 	}
 
 	inline fun renderToBitmap(bmp: Bitmap32, callback: () -> Unit) {
 		val rb = renderBuffers.alloc()
-		frameRenderBuffers += rb
 		val oldRendering = renderingToTexture
 		renderingToTexture = true
 
@@ -495,6 +501,7 @@ abstract class AG : Extra by Extra.Mixin() {
 			rb.readBitmap(bmp)
 			rb.end()
 			renderingToTexture = oldRendering
+			renderBuffers.free(rb)
 		}
 	}
 }
