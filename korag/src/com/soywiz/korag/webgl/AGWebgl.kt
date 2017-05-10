@@ -42,6 +42,18 @@ class AGWebgl : AG() {
 	override val pixelDensity: Double get() = window["devicePixelRatio"]?.toDouble() ?: 1.0
 	val onReadyOnce = Once()
 
+	init {
+		canvas.call("addEventListener", "webglcontextlost", jsFunctionRaw1 { e ->
+			//contextVersion++
+			e.call("preventDefault")
+		}, false);
+
+		canvas.call("addEventListener", "webglcontextrestored", jsFunctionRaw1 { e ->
+			contextVersion++
+			//e.call("preventDefault")
+		}, false);
+	}
+
 	override fun repaint() {
 		onReadyOnce { ready() }
 		onRender(this)
@@ -80,6 +92,9 @@ class AGWebgl : AG() {
 
 	inner class WebglProgram(val p: Program) : Closeable {
 		var program = gl.call("createProgram")
+		var cachedVersion = -1
+		var vertex: JsDynamic? = null
+		var fragment: JsDynamic? = null
 
 		fun createShader(type: JsDynamic?, source: String): JsDynamic? {
 			val shader = gl.call("createShader", type)
@@ -97,23 +112,25 @@ class AGWebgl : AG() {
 			return shader
 		}
 
-		var vertex = createShader(gl["VERTEX_SHADER"], p.vertex.toGlSlString())
-		var fragment = createShader(gl["FRAGMENT_SHADER"], p.fragment.toGlSlString())
+		private fun ensure() {
+			if (cachedVersion != contextVersion) {
+				cachedVersion = contextVersion
+				vertex = createShader(gl["VERTEX_SHADER"], p.vertex.toGlSlString())
+				fragment = createShader(gl["FRAGMENT_SHADER"], p.fragment.toGlSlString())
+				gl.call("attachShader", program, vertex)
+				gl.call("attachShader", program, fragment)
 
-		init {
-			gl.call("attachShader", program, vertex)
-			gl.call("attachShader", program, fragment)
+				gl.call("linkProgram", program)
 
-			gl.call("linkProgram", program)
-
-			if (!gl.call("getProgramParameter", program, gl["LINK_STATUS"]).toBool()) {
-				val info = gl.call("getProgramInfoLog", program)
-				JTranscConsole.error("Could not compile WebGL program: " + info)
+				if (!gl.call("getProgramParameter", program, gl["LINK_STATUS"]).toBool()) {
+					val info = gl.call("getProgramInfoLog", program)
+					JTranscConsole.error("Could not compile WebGL program: " + info)
+				}
 			}
 		}
 
-
 		fun bind() {
+			ensure()
 			gl.call("useProgram", this.program)
 		}
 
@@ -122,6 +139,7 @@ class AGWebgl : AG() {
 		}
 
 		override fun close() {
+			ensure()
 			gl.call("deleteShader", this.vertex)
 			gl.call("deleteShader", this.fragment)
 			gl.call("deleteProgram", this.program)
@@ -129,7 +147,17 @@ class AGWebgl : AG() {
 	}
 
 	inner class WebglTexture() : Texture() {
-		val tex = gl.call("createTexture")
+		var cachedVersion = -1
+		private var _tex: JsDynamic? = null
+		val tex: JsDynamic?
+			get() {
+				if (cachedVersion != contextVersion) {
+					cachedVersion = contextVersion
+					invalidate()
+					_tex = gl.call("createTexture")
+				}
+				return _tex
+			}
 
 		override fun actualSyncUpload(source: BitmapSourceBase, bmp: Bitmap?, requestMipmaps: Boolean) {
 			when (bmp) {
@@ -194,16 +222,35 @@ class AGWebgl : AG() {
 	}
 
 	inner class WebglBuffer(kind: Kind) : Buffer(kind) {
-		val buffer = gl.call("createBuffer")
+		var cachedVersion = -1
+		var buffer: JsDynamic? = null
 		val target = if (kind == Kind.INDEX) gl["ELEMENT_ARRAY_BUFFER"] else gl["ARRAY_BUFFER"]
 
-		fun bind() {
-			gl.call("bindBuffer", this.target, this.buffer)
+		override fun afterSetMem() {
+			//bind()
+			//if (mem != null) {
+			//	val buffer = mem.asJsDynamic()["buffer"]
+			//	val typedArray = jsNew("Int8Array", buffer, memOffset, memLength)
+			//	//console.methods["log"](target)
+			//	//console.methods["log"](typedArray)
+			//	gl.call("bufferData", this.target, typedArray, gl["STATIC_DRAW"])
+			//}
 		}
 
-		override fun afterSetMem() {
-			bind()
-			if (mem != null) {
+		fun bind() {
+			if (cachedVersion != contextVersion) {
+				cachedVersion = contextVersion
+				buffer = null
+				dirty = true
+			}
+
+			if (buffer == null) {
+				buffer = gl.call("createBuffer")
+			}
+
+			gl.call("bindBuffer", this.target, this.buffer)
+
+			if (dirty) {
 				val buffer = mem.asJsDynamic()["buffer"]
 				val typedArray = jsNew("Int8Array", buffer, memOffset, memLength)
 				//console.methods["log"](target)
@@ -213,7 +260,10 @@ class AGWebgl : AG() {
 		}
 
 		override fun close() {
-			gl.call("deleteBuffer", buffer)
+			if (buffer != null) {
+				gl.call("deleteBuffer", buffer)
+			}
+			buffer =  null
 		}
 	}
 
@@ -394,13 +444,20 @@ class AGWebgl : AG() {
 	}
 
 	inner class WebglRenderBuffer() : RenderBuffer() {
-		val wtex = tex as WebglTexture
+		var cachedVersion = -1
+		val wtex get() = tex as WebglTexture
 
-		val renderbuffer = gl.call("createRenderbuffer")
-		val framebuffer = gl.call("createFramebuffer")
+		var renderbuffer: JsDynamic? = null
+		var framebuffer: JsDynamic? = null
 		var oldViewport = IntArray(4)
 
 		override fun start(width: Int, height: Int) {
+			if (cachedVersion != contextVersion) {
+				cachedVersion = contextVersion
+				renderbuffer = gl.call("createRenderbuffer")
+				framebuffer = gl.call("createFramebuffer")
+			}
+
 			oldViewport = gl.call("getParameter", gl["VIEWPORT"]).toIntArray()
 			//println("oldViewport:${oldViewport.toList()}")
 			gl.call("bindTexture", gl["TEXTURE_2D"], wtex.tex)

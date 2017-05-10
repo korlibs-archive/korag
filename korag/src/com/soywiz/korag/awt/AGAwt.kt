@@ -46,7 +46,7 @@ class AGFactoryAwt : AGFactory() {
 		})
 
 		return object : AGWindow() {
-			override val agInput: AGInput  = AGInput()
+			override val agInput: AGInput = AGInput()
 			//override val onResized: Signal<Unit> = Signal()
 
 			override fun repaint() = Unit
@@ -82,7 +82,7 @@ abstract class AGAwtBase : AG() {
 
 	inner class AwtRenderBuffer : RenderBuffer() {
 		var cachedVersion = -1
-		val wtex = tex as AwtTexture
+		val wtex get() = tex as AwtTexture
 
 		val renderbuffer = IntBuffer.allocate(1)
 		val framebuffer = IntBuffer.allocate(1)
@@ -91,49 +91,44 @@ abstract class AGAwtBase : AG() {
 		override fun start(width: Int, height: Int) {
 			if (cachedVersion != contextVersion) {
 				cachedVersion = contextVersion
-				gl.glGenRenderbuffers(1, renderbuffer)
-				gl.glGenFramebuffers(1, framebuffer)
+				checkErrors { gl.glGenRenderbuffers(1, renderbuffer) }
+				checkErrors { gl.glGenFramebuffers(1, framebuffer) }
 			}
-			//gl.getparameter
-			gl.glGetIntegerv(GL.GL_VIEWPORT, oldViewport, 0)
-			//println("oldViewport:${oldViewport.toList()}")
 
-			gl.glBindTexture(GL.GL_TEXTURE_2D, wtex.tex)
-			gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_LINEAR)
-			gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_LINEAR)
-
-			//gl.glTexImage2D(GL.GL_TEXTURE_2D, 0, GL.GL_RGBA, width, height, 0, GL.GL_RGBA, GL.GL_UNSIGNED_BYTE, ByteBuffer.allocate(width * height * 4))
-			gl.glTexImage2D(GL.GL_TEXTURE_2D, 0, GL.GL_RGBA, width, height, 0, GL.GL_RGBA, GL.GL_UNSIGNED_BYTE, null)
-			gl.glBindTexture(GL.GL_TEXTURE_2D, 0)
-
-			gl.glBindRenderbuffer(GL.GL_RENDERBUFFER, renderbuffer[0])
-			gl.glBindFramebuffer(GL.GL_FRAMEBUFFER, framebuffer[0])
-
-			gl.glFramebufferTexture2D(GL.GL_FRAMEBUFFER, GL.GL_COLOR_ATTACHMENT0, GL.GL_TEXTURE_2D, wtex.tex, 0)
-			gl.glRenderbufferStorage(GL.GL_RENDERBUFFER, GL.GL_DEPTH_COMPONENT16, width, height)
-			gl.glFramebufferRenderbuffer(GL.GL_FRAMEBUFFER, GL.GL_DEPTH_ATTACHMENT, GL.GL_RENDERBUFFER, renderbuffer[0])
-
-			gl.glViewport(0, 0, width, height)
+			checkErrors { gl.glGetIntegerv(GL.GL_VIEWPORT, oldViewport, 0) }
+			checkErrors { gl.glBindTexture(GL.GL_TEXTURE_2D, wtex.tex) }
+			checkErrors { gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_LINEAR) }
+			checkErrors { gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_LINEAR) }
+			checkErrors { gl.glTexImage2D(GL.GL_TEXTURE_2D, 0, GL.GL_RGBA, width, height, 0, GL.GL_RGBA, GL.GL_UNSIGNED_BYTE, null) }
+			checkErrors { gl.glBindTexture(GL.GL_TEXTURE_2D, 0) }
+			checkErrors { gl.glBindRenderbuffer(GL.GL_RENDERBUFFER, renderbuffer[0]) }
+			checkErrors { gl.glBindFramebuffer(GL.GL_FRAMEBUFFER, framebuffer[0]) }
+			checkErrors { gl.glFramebufferTexture2D(GL.GL_FRAMEBUFFER, GL.GL_COLOR_ATTACHMENT0, GL.GL_TEXTURE_2D, wtex.tex, 0) }
+			checkErrors { gl.glRenderbufferStorage(GL.GL_RENDERBUFFER, GL.GL_DEPTH_COMPONENT16, width, height) }
+			checkErrors { gl.glFramebufferRenderbuffer(GL.GL_FRAMEBUFFER, GL.GL_DEPTH_ATTACHMENT, GL.GL_RENDERBUFFER, renderbuffer[0]) }
+			checkErrors { gl.glViewport(0, 0, width, height) }
 		}
 
 		override fun end() {
-			gl.glFlush()
-			gl.glBindTexture(GL.GL_TEXTURE_2D, 0)
-			gl.glBindRenderbuffer(GL.GL_RENDERBUFFER, 0)
-			gl.glBindFramebuffer(GL.GL_FRAMEBUFFER, 0)
-			gl.glViewport(oldViewport[0], oldViewport[1], oldViewport[2], oldViewport[3])
+			//checkErrors { gl.glFlush() }
+			checkErrors { gl.glBindTexture(GL.GL_TEXTURE_2D, 0) }
+			checkErrors { gl.glBindRenderbuffer(GL.GL_RENDERBUFFER, 0) }
+			checkErrors { gl.glBindFramebuffer(GL.GL_FRAMEBUFFER, 0) }
+			checkErrors { gl.glViewport(oldViewport[0], oldViewport[1], oldViewport[2], oldViewport[3]) }
 		}
 
 		override fun readBitmap(bmp: Bitmap32) {
-			gl.glReadPixels(0, 0, bmp.width, bmp.height, GL.GL_RGBA, GL.GL_UNSIGNED_BYTE, IntBuffer.wrap(bmp.data))
+			checkErrors { gl.glReadPixels(0, 0, bmp.width, bmp.height, GL.GL_RGBA, GL.GL_UNSIGNED_BYTE, IntBuffer.wrap(bmp.data)) }
 
 			//val ibuffer = JTranscArrays.nativeReinterpretAsInt(data.data)
 			//for (n in 0 until bmp.area) bmp.data[n] = RGBA.rgbaToBgra(ibuffer[n])
 		}
 
 		override fun close() {
-			gl.glDeleteFramebuffers(1, framebuffer)
-			gl.glDeleteRenderbuffers(1, renderbuffer)
+			checkErrors { gl.glDeleteFramebuffers(1, framebuffer) }
+			checkErrors { gl.glDeleteRenderbuffers(1, renderbuffer) }
+			framebuffer.put(0, 0)
+			renderbuffer.put(0, 0)
 		}
 	}
 
@@ -425,9 +420,9 @@ abstract class AGAwtBase : AG() {
 			return texIds[0]
 		}
 
-		fun createBufferForBitmap(bmp: Bitmap?): ByteBuffer {
+		fun createBufferForBitmap(bmp: Bitmap?): ByteBuffer? {
 			return when (bmp) {
-				null -> ByteBuffer.allocateDirect(0)
+				null -> null
 				is NativeImage -> {
 					val mem = FastMemory.alloc(bmp.area * 4)
 					val image = bmp as AwtNativeImage
@@ -464,17 +459,28 @@ abstract class AGAwtBase : AG() {
 			} else {
 				GL2.GL_LUMINANCE
 			}
-			checkErrors {
-				gl.glTexImage2D(GL2.GL_TEXTURE_2D, 0, type, source.width, source.height, 0, type, GL2.GL_UNSIGNED_BYTE, createBufferForBitmap(bmp))
+
+			val buffer = createBufferForBitmap(bmp)
+			if (buffer != null) {
+				checkErrors {
+					gl.glTexImage2D(GL2.GL_TEXTURE_2D, 0, type, source.width, source.height, 0, type, GL2.GL_UNSIGNED_BYTE, buffer)
+				}
 			}
+			//println(buffer)
 
 			this.mipmaps = false
 
 			if (requestMipmaps) {
+				//println(" - mipmaps")
 				this.mipmaps = true
+				bind()
 				setFilter(true)
 				setWrapST()
-				gl.glGenerateMipmap(GL.GL_TEXTURE_2D)
+				checkErrors {
+					gl.glGenerateMipmap(GL.GL_TEXTURE_2D)
+				}
+			} else {
+				//println(" - nomipmaps")
 			}
 		}
 
@@ -653,7 +659,7 @@ class AGAwt : AGAwtBase(), AGContainer {
 		}
 	}
 
-	val keyListener =  object : KeyAdapter() {
+	val keyListener = object : KeyAdapter() {
 		override fun keyTyped(e: KeyEvent) {
 			updateKey(e)
 			agInput.onKeyTyped(agInput.keyEvent)

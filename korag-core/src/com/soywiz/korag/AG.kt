@@ -200,6 +200,10 @@ abstract class AG : Extra by Extra.Mixin() {
 		open fun unbind() {
 		}
 
+		fun manualUpload() = this.apply {
+			uploaded = true
+		}
+
 		fun bindEnsuring() {
 			bind()
 			val source = this.source
@@ -410,7 +414,16 @@ abstract class AG : Extra by Extra.Mixin() {
 	val renderBuffers = Pool<RenderBuffer>() { createRenderBuffer() }
 
 	open inner class RenderBuffer : Closeable {
-		val tex = this@AG.createTexture()
+		private var cachedTexVersion = -1
+		private var _tex: Texture? = null
+
+		val tex: AG.Texture get() {
+			if (cachedTexVersion != contextVersion) {
+				cachedTexVersion = contextVersion
+				_tex = this@AG.createTexture().manualUpload()
+			}
+			return _tex!!
+		}
 
 		open fun start(width: Int, height: Int) = Unit
 		open fun end() = Unit
