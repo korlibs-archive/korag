@@ -23,6 +23,7 @@ import com.soywiz.korio.util.OS
 import com.soywiz.korio.util.Once
 import com.soywiz.korio.util.UByteArray
 import java.io.Closeable
+import java.nio.ByteBuffer
 
 class AGFactoryWebgl : AGFactory() {
 	override val available: Boolean = OS.isJs
@@ -486,7 +487,8 @@ class AGWebgl : AG() {
 
 			gl.call("readPixels", 0, 0, bmp.width, bmp.height, gl["RGBA"], gl["UNSIGNED_BYTE"], jsNew("Uint8Array", data.data.asJsDynamic()["data"]["buffer"]))
 
-			val ibuffer = JTranscArrays.nativeReinterpretAsInt(data.data)
+			//val ibuffer = JTranscArrays.nativeReinterpretAsInt(data.data)
+			val ibuffer = ByteBuffer.wrap(data.data).asIntBuffer()
 			for (n in 0 until bmp.area) bmp.data[n] = RGBA.rgbaToBgra(ibuffer[n])
 		}
 
