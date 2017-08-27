@@ -1,2 +1,3 @@
 com.soywiz.korag.webgl.AGFactoryWebgl # <target=js>
 com.soywiz.korag.awt.AGFactoryAwt # <target=jvm>
+com.soywiz.korag.haxelime.AGFactoryHaxeLime # <target=haxe>
