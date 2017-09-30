@@ -1,7 +1,8 @@
 rootProject.name = 'korag-root'
 
 include(
+        'korag-common',
         'korag',
-        'korag-core',
         'korag-android',
+        'korag-js',
 )
