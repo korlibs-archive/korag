@@ -20,6 +20,8 @@ import kotlin.coroutines.experimental.EmptyCoroutineContext
 
 val defaultFactory by lazy { AGFactoryFactory.create() }
 
+val agFactory: AGFactory by lazy { defaultFactory }
+
 expect object AGFactoryFactory {
 	fun create(): AGFactory
 }
