@@ -34,9 +34,12 @@ object AGFactoryWebgl : AGFactory {
 	}
 }
 
-fun jsObject(vararg pairs: Pair<String, Any?>) {
-	val out = js("{}")
+fun jsEmptyObject(): dynamic = js("({})")
+
+fun jsObject(vararg pairs: Pair<String, Any?>): dynamic {
+	val out = jsEmptyObject()
 	for ((k, v) in pairs) if (v != null) out[k] = v
+	//for ((k, v) in pairs) out[k] = v
 	return out
 }
 
