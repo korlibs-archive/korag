@@ -162,7 +162,13 @@ class GlslGenerator(val kind: ShaderType, @Suppress("unused") val gles: Boolean 
 	}
 
 	override fun visit(operand: Program.FloatLiteral) {
-		programStr.append(operand.value)
+		val str = "${operand.value}"
+
+		if (str.contains('.')) {
+			programStr.append(str)
+		} else {
+			programStr.append("$str.0")
+		}
 		super.visit(operand)
 	}
 
