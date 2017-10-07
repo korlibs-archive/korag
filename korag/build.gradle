@@ -3,8 +3,7 @@ apply plugin: 'kotlin-platform-jvm'
 dependencies {
     implement project(":korag-common")
     testImplementation project(":korag-common")
-    compile libraries.kotlin_stdlib_jvm
-    testCompile libraries.kotlin_test_jvm
+
     testCompile "junit:junit:4.12"
     compile "com.soywiz:korio:$korVersion"
     compile "com.soywiz:korim:$korVersion"
@@ -36,9 +35,4 @@ dependencies {
     runtime "org.jogamp.jogl:jogl-all:2.3.1:natives-solaris-i586"
     runtime "org.jogamp.jogl:jogl-all:2.3.1:natives-windows-amd64"
     runtime "org.jogamp.jogl:jogl-all:2.3.1:natives-windows-i586"
-
-}
-
-kotlin {
-    experimental { coroutines 'enable' }
 }

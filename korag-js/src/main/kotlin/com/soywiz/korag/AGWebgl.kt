@@ -50,7 +50,8 @@ class AGWebgl : AG() {
 		"alpha" to false,
 		"stencil" to true
 	)
-	val gl: GL = (canvas.getContext("webgl", glOpts) ?: canvas.getContext("experimental-webgl", glOpts)) as GL
+	//val gl: GL = (canvas.getContext("webgl", glOpts) ?: canvas.getContext("experimental-webgl", glOpts)) as GL
+	val gl: GL = (canvas.getContext("webgl", glOpts) ?: canvas.getContext("experimental-webgl", glOpts)).asDynamic()
 	override val nativeComponent: Any = canvas
 	override val pixelDensity: Double get() = window.devicePixelRatio ?: 1.0
 	val onReadyOnce = Once()
