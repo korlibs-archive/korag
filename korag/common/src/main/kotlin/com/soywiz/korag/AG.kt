@@ -441,7 +441,7 @@ abstract class AG : Extra by Extra.Mixin() {
 	fun flip() {
 		disposeTemporalPerFrameStuff()
 		renderBuffers.free(frameRenderBuffers)
-		frameRenderBuffers.clear()
+		if (frameRenderBuffers.isNotEmpty()) frameRenderBuffers.clear()
 		flipInternal()
 	}
 
