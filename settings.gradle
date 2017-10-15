@@ -6,3 +6,8 @@ include(
         'korag-android',
         'korag-js',
 )
+
+project(':korag-common').projectDir = file('korag/common')
+project(':korag').projectDir = file('korag/jvm')
+project(':korag-android').projectDir = file('korag/android')
+project(':korag-js').projectDir = file('korag/js')
