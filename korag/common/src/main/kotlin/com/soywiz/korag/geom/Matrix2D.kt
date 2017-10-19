@@ -1,6 +1,6 @@
 package com.soywiz.korag.geom
 
-import com.soywiz.korio.lang.JvmField
+import com.soywiz.korio.JvmField
 import kotlin.math.cos
 import kotlin.math.sin
 

@@ -1,7 +1,7 @@
 apply plugin: 'kotlin-platform-jvm'
 
 dependencies {
-	implement project(":korag-common")
+	expectedBy project(":korag-common")
 
 	compile "com.soywiz:korio-android:$korVersion"
 	compile "com.soywiz:korim-android:$korVersion"
