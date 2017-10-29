@@ -1,5 +1,7 @@
 # Korag - Kotlin cORoutines Accelerated Graphics
 
+[![Build Status](https://travis-ci.org/korlibs/korag.svg?branch=master)](https://travis-ci.org/korlibs/korag)
+
 ![](https://raw.githubusercontent.com/soywiz/kor/master/logos/128/korag.png)
 
 [All KOR libraries](https://github.com/soywiz/kor)
