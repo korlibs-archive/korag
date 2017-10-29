@@ -3,7 +3,5 @@ apply plugin: 'kotlin-platform-js'
 dependencies {
     expectedBy project(":korag-common")
 
-    compile "com.soywiz:korim-js:$korVersion"
-    compile "com.soywiz:korio-js:$korVersion"
-    compile "com.soywiz:korma-js:$korVersion"
+    compile "com.soywiz:korim-js:$korimVersion"
 }

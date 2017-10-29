@@ -5,9 +5,7 @@ dependencies {
     testImplementation project(":korag-common")
 
     testCompile "junit:junit:4.12"
-    compile "com.soywiz:korio:$korVersion"
-    compile "com.soywiz:korim:$korVersion"
-    compile "com.soywiz:korma:$korVersion"
+    compile "com.soywiz:korim:$korimVersion"
 
     compile "org.jogamp.gluegen:gluegen-rt:2.3.1"
     compile "org.jogamp.jogl:jogl-all:2.3.1"
