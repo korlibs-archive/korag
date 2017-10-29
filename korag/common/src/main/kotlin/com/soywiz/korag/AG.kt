@@ -192,6 +192,7 @@ abstract class AG : Extra by Extra.Mixin() {
 		fun upload(source: BitmapSourceBase, mipmaps: Boolean = false): Texture = this.apply {
 			this.source = source
 			uploadedSource()
+			invalidate()
 			this.requestMipmaps = mipmaps
 		}
 
