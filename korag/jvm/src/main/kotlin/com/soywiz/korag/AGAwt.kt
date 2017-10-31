@@ -246,6 +246,9 @@ abstract class AGAwtBase : AG() {
 			checkErrors { gl.glDisable(GL2.GL_BLEND) }
 		}
 
+		//gl.glDisable(GL2.GL_CULL_FACE)
+		//gl.glFrontFace(GL2.GL_CW)
+
 		checkErrors { gl.glColorMask(colorMask.red, colorMask.green, colorMask.blue, colorMask.alpha) }
 
 		if (stencil.enabled) {

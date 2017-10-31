@@ -1,5 +1,6 @@
 package com.soywiz.korag
 
+import com.soywiz.korag.geom.Matrix4
 import com.soywiz.korag.shader.Program
 import com.soywiz.korag.shader.Uniform
 import com.soywiz.korag.shader.VertexLayout
@@ -135,6 +136,7 @@ abstract class AG : Extra by Extra.Mixin() {
 		val enabled: Boolean get() = !disabled
 
 		companion object {
+			val NONE = Blending(BlendFactor.ONE, BlendFactor.ZERO, BlendFactor.ONE, BlendFactor.ZERO)
 			val NORMAL = Blending(BlendFactor.SOURCE_ALPHA, BlendFactor.ONE_MINUS_SOURCE_ALPHA, BlendFactor.ONE, BlendFactor.ONE_MINUS_SOURCE_ALPHA)
 
 			// http://www.learnopengles.com/tag/additive-blending/
@@ -515,5 +517,43 @@ abstract class AG : Extra by Extra.Mixin() {
 			renderingToTexture = oldRendering
 			renderBuffers.free(rb)
 		}
+	}
+
+	private val drawBmpMat: Matrix4 = Matrix4().setToOrtho(0f, 1f, 1f, 0f, 0f, 1f)
+	private var drawBmpVB: Buffer? = null
+	private var drawBmpIB: Buffer? = null
+	private var drawBmpTex: Texture? = null
+	private var drawBmpTexUnit: TextureUnit? = null
+	private val drawBmp_VERTICES = floatArrayOf(
+		0f, 0f, 0f, 0f, Float.fromBits(-1),
+		1f, 0f, 1f, 0f, Float.fromBits(-1),
+		0f, 1f, 0f, 1f, Float.fromBits(-1),
+		1f, 1f, 1f, 1f, Float.fromBits(-1)
+	)
+	private val drawBmp_INDICES = shortArrayOf(0, 1, 2, 1, 2, 3)
+	private var drawBmp_UNIFORMS: Map<Uniform, Any>? = null
+
+	fun drawBmp(bitmap: Bitmap32) {
+		if (drawBmpVB == null) drawBmpVB = createVertexBuffer()
+		if (drawBmpIB == null) drawBmpIB = createIndexBuffer()
+		if (drawBmpTex == null) drawBmpTex = createTexture()
+		if (drawBmpTexUnit == null) drawBmpTexUnit = AG.TextureUnit(drawBmpTex, linear = false)
+		if (drawBmp_UNIFORMS == null) drawBmp_UNIFORMS = mapOf(
+			DefaultShaders.u_ProjMat to drawBmpMat,
+			DefaultShaders.u_Tex to drawBmpTexUnit!!
+		)
+		drawBmpVB?.upload(drawBmp_VERTICES)
+		drawBmpIB?.upload(drawBmp_INDICES)
+		drawBmpTex?.upload(bitmap, mipmaps = false)
+		draw(
+			vertices = drawBmpVB!!,
+			indices = drawBmpIB!!,
+			program = DefaultShaders.PROGRAM_TINTED_TEXTURE,
+			type = AG.DrawType.TRIANGLES,
+			vertexLayout = DefaultShaders.LAYOUT_DEFAULT,
+			vertexCount = 6,
+			blending = AG.Blending.NONE,
+			uniforms = drawBmp_UNIFORMS!!
+		)
 	}
 }

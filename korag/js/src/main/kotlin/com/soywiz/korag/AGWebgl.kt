@@ -506,9 +506,10 @@ class AGWebgl : AG() {
 		}
 
 		override fun readBitmap(bmp: Bitmap32) {
-			val ibuffer = Uint8Array(bmp.area * 4)
-			gl.readPixels(0, 0, bmp.width, bmp.height, GL.RGBA, GL.UNSIGNED_BYTE, ibuffer)
-			for (n in 0 until bmp.area) bmp.data[n] = RGBA.rgbaToBgra(ibuffer[n].toInt())
+			val abuffer = ArrayBuffer(bmp.area * 4)
+			val ibuffer = Int32Array(abuffer)
+			gl.readPixels(0, 0, bmp.width, bmp.height, GL.RGBA, GL.UNSIGNED_BYTE, Uint8Array(abuffer))
+			for (n in 0 until bmp.area) bmp.data[n] = RGBA.rgbaToBgra(ibuffer[n])
 		}
 
 		override fun close() {

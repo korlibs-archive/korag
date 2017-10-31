@@ -2,58 +2,63 @@
 
 package com.soywiz.korag.shader
 
-import com.soywiz.korio.JvmOverloads
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.lang.Closeable
+import com.soywiz.korio.util.nextAlignedTo
 
 enum class VarKind(val bytesSize: Int) {
 	BYTE(1), UNSIGNED_BYTE(1), SHORT(2), UNSIGNED_SHORT(2), INT(4), FLOAT(4)
 }
 
-enum class VarType(val kind: VarKind, val bytesSize: Int, val elementCount: Int) {
-	VOID(VarKind.BYTE, 0, elementCount = 0),
-	TextureUnit(VarKind.INT, 4, elementCount = 1),
-	Mat4(VarKind.FLOAT, 4 * 4 * 4, elementCount = 16),
+enum class VarType(val kind: VarKind, val elementCount: Int) {
+	VOID(VarKind.BYTE, elementCount = 0),
+	Mat4(VarKind.FLOAT, elementCount = 16),
 
-	Int1(VarKind.INT, 4, elementCount = 1),
-	Float1(VarKind.FLOAT, 4, elementCount = 1),
-	Float2(VarKind.FLOAT, 8, elementCount = 2),
-	Float3(VarKind.FLOAT, 12, elementCount = 3),
-	Float4(VarKind.FLOAT, 16, elementCount = 4),
-	Short1(VarKind.SHORT, 2, elementCount = 1),
-	Short2(VarKind.SHORT, 2, elementCount = 2),
-	Short3(VarKind.SHORT, 2, elementCount = 3),
-	Short4(VarKind.SHORT, 2, elementCount = 4),
-	Bool1(VarKind.UNSIGNED_BYTE, 1, elementCount = 1),
+	TextureUnit(VarKind.INT, elementCount = 1),
 
-	Byte4(VarKind.UNSIGNED_BYTE, 4, elementCount = 4), // OLD: Is this right?
+	Int1(VarKind.INT, elementCount = 1),
 
-	SByte1(VarKind.BYTE, 1, elementCount = 1),
-	SByte2(VarKind.BYTE, 1, elementCount = 2),
-	SByte3(VarKind.BYTE, 1, elementCount = 3),
-	SByte4(VarKind.BYTE, 1, elementCount = 4),
+	Float1(VarKind.FLOAT, elementCount = 1),
+	Float2(VarKind.FLOAT, elementCount = 2),
+	Float3(VarKind.FLOAT, elementCount = 3),
+	Float4(VarKind.FLOAT, elementCount = 4),
 
-	UByte1(VarKind.UNSIGNED_BYTE, 1, elementCount = 1),
-	UByte2(VarKind.UNSIGNED_BYTE, 1, elementCount = 2),
-	UByte3(VarKind.UNSIGNED_BYTE, 1, elementCount = 3),
-	UByte4(VarKind.UNSIGNED_BYTE, 1, elementCount = 4),
+	Short1(VarKind.SHORT, elementCount = 1),
+	Short2(VarKind.SHORT, elementCount = 2),
+	Short3(VarKind.SHORT, elementCount = 3),
+	Short4(VarKind.SHORT, elementCount = 4),
 
-	SShort1(VarKind.SHORT, 2, elementCount = 1),
-	SShort2(VarKind.SHORT, 2, elementCount = 2),
-	SShort3(VarKind.SHORT, 2, elementCount = 3),
-	SShort4(VarKind.SHORT, 2, elementCount = 4),
+	Bool1(VarKind.UNSIGNED_BYTE, elementCount = 1),
 
-	UShort1(VarKind.UNSIGNED_SHORT, 2, elementCount = 1),
-	UShort2(VarKind.UNSIGNED_SHORT, 2, elementCount = 2),
-	UShort3(VarKind.UNSIGNED_SHORT, 2, elementCount = 3),
-	UShort4(VarKind.UNSIGNED_SHORT, 2, elementCount = 4),
+	Byte4(VarKind.UNSIGNED_BYTE, elementCount = 4), // OLD: Is this right?
 
-	SInt1(VarKind.INT, 4, elementCount = 1),
-	SInt2(VarKind.INT, 4, elementCount = 2),
-	SInt3(VarKind.INT, 4, elementCount = 3),
-	SInt4(VarKind.INT, 4, elementCount = 4),
+	SByte1(VarKind.BYTE, elementCount = 1),
+	SByte2(VarKind.BYTE, elementCount = 2),
+	SByte3(VarKind.BYTE, elementCount = 3),
+	SByte4(VarKind.BYTE, elementCount = 4),
 
+	UByte1(VarKind.UNSIGNED_BYTE, elementCount = 1),
+	UByte2(VarKind.UNSIGNED_BYTE, elementCount = 2),
+	UByte3(VarKind.UNSIGNED_BYTE, elementCount = 3),
+	UByte4(VarKind.UNSIGNED_BYTE, elementCount = 4),
+
+	SShort1(VarKind.SHORT, elementCount = 1),
+	SShort2(VarKind.SHORT, elementCount = 2),
+	SShort3(VarKind.SHORT, elementCount = 3),
+	SShort4(VarKind.SHORT, elementCount = 4),
+
+	UShort1(VarKind.UNSIGNED_SHORT, elementCount = 1),
+	UShort2(VarKind.UNSIGNED_SHORT, elementCount = 2),
+	UShort3(VarKind.UNSIGNED_SHORT, elementCount = 3),
+	UShort4(VarKind.UNSIGNED_SHORT, elementCount = 4),
+
+	SInt1(VarKind.INT, elementCount = 1),
+	SInt2(VarKind.INT, elementCount = 2),
+	SInt3(VarKind.INT, elementCount = 3),
+	SInt4(VarKind.INT, elementCount = 4),
 	;
+
+	val bytesSize: Int = kind.bytesSize * elementCount
 
 	companion object {
 		fun BYTE(count: Int) = when (count) { 0 -> VOID; 1 -> SByte1; 2 -> SByte2; 3 -> SByte3; 4 -> SByte4; else -> invalidOp; }
@@ -81,8 +86,10 @@ open class Variable(val name: String, type: VarType) : Operand(type) {
 	var data: Any? = null
 }
 
-open class Attribute @JvmOverloads constructor(name: String, type: VarType, val normalized: Boolean, val active: Boolean = true) : Variable(name, type) {
-	fun inactived() = Attribute(name, type, normalized, active = false)
+open class Attribute(name: String, type: VarType, val normalized: Boolean, val offset: Int? = null, val active: Boolean = true) : Variable(name, type) {
+	constructor(name: String, type: VarType, normalized: Boolean) : this(name, type, normalized, null, true)
+
+	fun inactived() = Attribute(name, type, normalized, offset = null, active = false)
 	override fun toString(): String = "Attribute($name)"
 }
 
@@ -364,15 +371,31 @@ fun FragmentShader(callback: Program.Builder.() -> Unit): FragmentShader {
 	return FragmentShader(Program.Stm.Stms(builder.outputStms))
 }
 
-class VertexLayout(val attributes: List<Attribute>) {
-	constructor(vararg attributes: Attribute) : this(attributes.toList())
+class VertexLayout(val attributes: List<Attribute>, private val layoutSize: Int?) {
+	constructor(attributes: List<Attribute>) : this(attributes, null)
+	constructor(vararg attributes: Attribute) : this(attributes.toList(), null)
+	constructor(vararg attributes: Attribute, layoutSize: Int? = null) : this(attributes.toList(), layoutSize)
 
-	var totalSize = 0; private set
+	private var _lastPos: Int = 0
+
+	val alignments = attributes.map {
+		val a = it.type.kind.bytesSize
+		if (a <= 1) 1 else a
+	}
+
 	val attributePositions = attributes.map {
-		val out = totalSize
-		totalSize += it.type.bytesSize
+		if (it.offset != null) {
+			_lastPos = it.offset
+		} else {
+			_lastPos = _lastPos.nextAlignedTo(it.type.kind.bytesSize)
+		}
+		val out = _lastPos
+		_lastPos += it.type.bytesSize
 		out
 	}
+
+	val maxAlignment = alignments.max() ?: 1
+	val totalSize: Int = run { layoutSize ?: _lastPos.nextAlignedTo(maxAlignment) }
 
 	override fun toString(): String = "VertexLayout[${attributes.map { it.name }.joinToString(", ")}]"
 }
