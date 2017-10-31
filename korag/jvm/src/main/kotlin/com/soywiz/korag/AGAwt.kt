@@ -204,16 +204,18 @@ abstract class AGAwtBase : AG() {
 		(aindices as AwtBuffer).bind(gl)
 		glProgram.use()
 
+		val totalSize = vertexLayout.totalSize
 		for (n in vertexLayout.attributePositions.indices) {
 			val att = vertexLayout.attributes[n]
-			val off = vertexLayout.attributePositions[n]
-			val loc = checkErrors { gl.glGetAttribLocation(glProgram.id, att.name).toInt() }
-			val glElementType = att.type.glElementType
-			val elementCount = att.type.elementCount
-			val totalSize = vertexLayout.totalSize
-			if (loc >= 0) {
-				checkErrors { gl.glEnableVertexAttribArray(loc) }
-				checkErrors { gl.glVertexAttribPointer(loc, elementCount, glElementType, att.normalized, totalSize, off.toLong()) }
+			if (att.active) {
+				val off = vertexLayout.attributePositions[n]
+				val loc = checkErrors { gl.glGetAttribLocation(glProgram.id, att.name).toInt() }
+				val glElementType = att.type.glElementType
+				val elementCount = att.type.elementCount
+				if (loc >= 0) {
+					checkErrors { gl.glEnableVertexAttribArray(loc) }
+					checkErrors { gl.glVertexAttribPointer(loc, elementCount, glElementType, att.normalized, totalSize, off.toLong()) }
+				}
 			}
 		}
 		var textureUnit = 0
@@ -262,7 +264,7 @@ abstract class AGAwtBase : AG() {
 		checkErrors { gl.glDrawElements(type.glDrawMode, vertexCount, GL2.GL_UNSIGNED_SHORT, offset.toLong()) }
 
 		checkErrors { gl.glActiveTexture(GL2.GL_TEXTURE0) }
-		for (att in vertexLayout.attributes) {
+		for (att in vertexLayout.attributes.filter { it.active }) {
 			val loc = checkErrors { gl.glGetAttribLocation(glProgram.id, att.name).toInt() }
 			if (loc >= 0) {
 				checkErrors { gl.glDisableVertexAttribArray(loc) }
@@ -282,6 +284,7 @@ abstract class AGAwtBase : AG() {
 		get() = when (this) {
 			VarType.Int1 -> GL2.GL_INT
 			VarType.Float1, VarType.Float2, VarType.Float3, VarType.Float4 -> GL2.GL_FLOAT
+			VarType.Short1, VarType.Short2, VarType.Short3, VarType.Short4 -> GL2.GL_SHORT
 			VarType.Mat4 -> GL2.GL_FLOAT
 			VarType.Bool1 -> GL2.GL_UNSIGNED_BYTE
 			VarType.Byte4 -> GL2.GL_UNSIGNED_BYTE
@@ -319,8 +322,13 @@ abstract class AGAwtBase : AG() {
 			val out = IntArray(1)
 			checkErrors { gl.glGetShaderiv(shaderId, GL2.GL_COMPILE_STATUS, out, 0) }
 			if (out[0] != GL2.GL_TRUE) {
-				// gl.glGetShaderInfoLog()
-				throw RuntimeException("Error Compiling Shader")
+				val maxLength = IntArray(1)
+				gl.glGetShaderiv(shaderId, GL2.GL_INFO_LOG_LENGTH, maxLength, 0);
+				val info = ByteArray(maxLength[0])
+				gl.glGetShaderInfoLog(shaderId, maxLength[0], maxLength, 0, info, 0)
+
+				System.err.println(str)
+				throw RuntimeException("Error Compiling Shader : " + info.toString(Charsets.UTF_8))
 			}
 			return shaderId
 		}
@@ -534,6 +542,8 @@ abstract class AGAwtBase : AG() {
 			val error = gl.glGetError()
 			if (error != GL.GL_NO_ERROR) {
 				System.err.println("OpenGL error: $error")
+				//System.err.println(Throwable().stackTrace)
+				Throwable().printStackTrace()
 				//throw RuntimeException("OpenGL error: $error")
 			}
 		}

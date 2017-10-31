@@ -295,6 +295,7 @@ class AGWebgl : AG() {
 		get() = when (this) {
 			VarType.Int1 -> GL.INT
 			VarType.Float1, VarType.Float2, VarType.Float3, VarType.Float4 -> GL.FLOAT
+			VarType.Short1, VarType.Short2, VarType.Short3, VarType.Short4 -> GL.SHORT
 			VarType.Mat4 -> GL.FLOAT
 			VarType.Bool1 -> GL.UNSIGNED_BYTE
 			VarType.Byte4 -> GL.UNSIGNED_BYTE
@@ -376,16 +377,18 @@ class AGWebgl : AG() {
 		(aindices as WebglBuffer).bind()
 		glProgram.bind()
 
+		val totalSize = vertexLayout.totalSize
 		for (n in vertexLayout.attributePositions.indices) {
 			val att = vertexLayout.attributes[n]
-			val off = vertexLayout.attributePositions[n]
-			val loc = gl.getAttribLocation(glProgram.program, att.name)
-			val glElementType = att.type.webglElementType
-			val elementCount = att.type.elementCount
-			val totalSize = vertexLayout.totalSize
-			if (loc >= 0) {
-				gl.enableVertexAttribArray(loc)
-				gl.vertexAttribPointer(loc, elementCount, glElementType, att.normalized, totalSize, off)
+			if (att.active) {
+				val off = vertexLayout.attributePositions[n]
+				val loc = gl.getAttribLocation(glProgram.program, att.name)
+				val glElementType = att.type.webglElementType
+				val elementCount = att.type.elementCount
+				if (loc >= 0) {
+					gl.enableVertexAttribArray(loc)
+					gl.vertexAttribPointer(loc, elementCount, glElementType, att.normalized, totalSize, off)
+				}
 			}
 		}
 		var textureUnit = 0
@@ -435,7 +438,7 @@ class AGWebgl : AG() {
 		gl.drawElements(type.glDrawMode, vertexCount, GL.UNSIGNED_SHORT, offset)
 
 		gl.activeTexture(GL.TEXTURE0)
-		for (att in vertexLayout.attributes) {
+		for (att in vertexLayout.attributes.filter { it.active }) {
 			val loc = gl.getAttribLocation(glProgram.program, att.name)
 			if (loc >= 0) {
 				gl.disableVertexAttribArray(loc)

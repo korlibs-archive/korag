@@ -149,16 +149,18 @@ class AGAndroid : AG() {
 		(aindices as AndroidBuffer).bind()
 		glProgram.use()
 
+		val totalSize = vertexLayout.totalSize
 		for (n in vertexLayout.attributePositions.indices) {
 			val att = vertexLayout.attributes[n]
-			val off = vertexLayout.attributePositions[n]
-			val loc = gl.glGetAttribLocation(glProgram.id, att.name).toInt()
-			val glElementType = att.type.glElementType
-			val elementCount = att.type.elementCount
-			val totalSize = vertexLayout.totalSize
-			if (loc >= 0) {
-				gl.glEnableVertexAttribArray(loc)
-				gl.glVertexAttribPointer(loc, elementCount, glElementType, att.normalized, totalSize, off)
+			if (att.active) {
+				val off = vertexLayout.attributePositions[n]
+				val loc = gl.glGetAttribLocation(glProgram.id, att.name).toInt()
+				val glElementType = att.type.glElementType
+				val elementCount = att.type.elementCount
+				if (loc >= 0) {
+					gl.glEnableVertexAttribArray(loc)
+					gl.glVertexAttribPointer(loc, elementCount, glElementType, att.normalized, totalSize, off)
+				}
 			}
 		}
 		var textureUnit = 0
@@ -195,7 +197,7 @@ class AGAndroid : AG() {
 		gl.glDrawElements(type.glDrawMode, vertexCount, GL.GL_UNSIGNED_SHORT, offset)
 
 		gl.glActiveTexture(GL.GL_TEXTURE0)
-		for (att in vertexLayout.attributes) {
+		for (att in vertexLayout.attributes.filter { it.active }) {
 			val loc = gl.glGetAttribLocation(glProgram.id, att.name).toInt()
 			if (loc >= 0) {
 				gl.glDisableVertexAttribArray(loc)
@@ -215,6 +217,7 @@ class AGAndroid : AG() {
 		get() = when (this) {
 			VarType.Int1 -> GL.GL_INT
 			VarType.Float1, VarType.Float2, VarType.Float3, VarType.Float4 -> GL.GL_FLOAT
+			VarType.Short1, VarType.Short2, VarType.Short3, VarType.Short4 -> GL.GL_SHORT
 			VarType.Mat4 -> GL.GL_FLOAT
 			VarType.Bool1 -> GL.GL_UNSIGNED_BYTE
 			VarType.Byte4 -> GL.GL_UNSIGNED_BYTE
@@ -249,7 +252,8 @@ class AGAndroid : AG() {
 			val out = IntArray(1)
 			gl.glGetShaderiv(shaderId, GL.GL_COMPILE_STATUS, out, 0)
 			if (out[0] != GL.GL_TRUE) {
-				throw RuntimeException("Error Compiling Shader : " + gl.glGetShaderInfoLog(shaderId) + "\n" + str)
+				System.err.println(str)
+				throw RuntimeException("Error Compiling Shader : " + gl.glGetShaderInfoLog(shaderId))
 			}
 			return shaderId
 		}

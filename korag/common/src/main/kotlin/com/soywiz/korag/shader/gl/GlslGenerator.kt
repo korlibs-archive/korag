@@ -39,6 +39,7 @@ class GlslGenerator(val kind: ShaderType, @Suppress("unused") val gles: Boolean 
 		for (v in varyings) prefix += "varying ${typeToString(v.type)} ${v.name};"
 
 		val precissions = arrayListOf<String>()
+		precissions += "#version 100"
 		precissions += "#ifdef GL_ES"
 		precissions += "precision mediump float;"
 		precissions += "precision mediump int;"
