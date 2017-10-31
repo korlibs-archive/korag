@@ -519,7 +519,8 @@ abstract class AG : Extra by Extra.Mixin() {
 		}
 	}
 
-	private val drawBmpMat: Matrix4 = Matrix4().setToOrtho(0f, 1f, 1f, 0f, 0f, 1f)
+	//private val drawBmpMat: Matrix4 = Matrix4().setToOrtho(0f, 1f, 1f, 0f, 0f, 1f)
+	private val drawBmpMat: Matrix4 = Matrix4().setToOrtho(0f, 0f, 1f, 1f, 0f, 1f)
 	private var drawBmpVB: Buffer? = null
 	private var drawBmpIB: Buffer? = null
 	private var drawBmpTex: Texture? = null
