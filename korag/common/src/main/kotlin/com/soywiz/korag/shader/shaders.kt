@@ -2,6 +2,7 @@
 
 package com.soywiz.korag.shader
 
+import com.soywiz.korio.JvmOverloads
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.lang.Closeable
 
@@ -14,7 +15,11 @@ enum class VarType(val bytesSize: Int, val elementCount: Int) {
 	Float3(12, elementCount = 3),
 	Float4(16, elementCount = 4),
 	Mat4(4 * 4 * 4, elementCount = 16),
-	Byte4(4, elementCount = 4)
+	Byte4(4, elementCount = 4),
+	Short1(2, elementCount = 1),
+	Short2(2, elementCount = 2),
+	Short3(2, elementCount = 3),
+	Short4(2, elementCount = 4)
 }
 
 //val out_Position = Output("gl_Position", VarType.Float4)
@@ -32,7 +37,8 @@ open class Variable(val name: String, type: VarType) : Operand(type) {
 	var data: Any? = null
 }
 
-open class Attribute(name: String, type: VarType, val normalized: Boolean) : Variable(name, type) {
+open class Attribute @JvmOverloads constructor(name: String, type: VarType, val normalized: Boolean, val active: Boolean = true) : Variable(name, type) {
+	fun inactived() = Attribute(name, type, normalized, active = false)
 	override fun toString(): String = "Attribute($name)"
 }
 
