@@ -323,7 +323,13 @@ abstract class AG : Extra by Extra.Mixin() {
 	}
 
 	enum class DrawType {
-		TRIANGLES, TRIANGLE_STRIP
+		POINTS,
+		LINE_STRIP,
+		LINE_LOOP,
+		LINES,
+		TRIANGLES,
+		TRIANGLE_STRIP,
+		TRIANGLE_FAN,
 	}
 
 	val dummyTexture by lazy { createTexture() }

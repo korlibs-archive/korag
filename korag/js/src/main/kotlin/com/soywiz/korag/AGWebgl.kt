@@ -300,8 +300,14 @@ class AGWebgl : AG() {
 
 	val DrawType.glDrawMode: Int
 		get() = when (this) {
-			DrawType.TRIANGLES -> GL.TRIANGLES
+			DrawType.POINTS -> GL.POINTS
+			DrawType.LINE_STRIP -> GL.LINE_STRIP
+			DrawType.LINE_LOOP -> GL.LINE_LOOP
+			DrawType.LINES -> GL.LINES
 			DrawType.TRIANGLE_STRIP -> GL.TRIANGLE_STRIP
+			DrawType.TRIANGLE_FAN -> GL.TRIANGLE_FAN
+			DrawType.TRIANGLES -> GL.TRIANGLES
+
 		}
 
 	private fun BlendEquation.toGl(): Int = when (this) {

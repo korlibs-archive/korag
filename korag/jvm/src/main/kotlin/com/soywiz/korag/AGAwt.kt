@@ -273,8 +273,13 @@ abstract class AGAwtBase : AG() {
 
 	val DrawType.glDrawMode: Int
 		get() = when (this) {
-			DrawType.TRIANGLES -> GL2.GL_TRIANGLES
+			DrawType.POINTS -> GL2.GL_POINTS
+			DrawType.LINE_STRIP -> GL2.GL_LINE_STRIP
+			DrawType.LINE_LOOP -> GL2.GL_LINE_LOOP
+			DrawType.LINES -> GL2.GL_LINES
 			DrawType.TRIANGLE_STRIP -> GL2.GL_TRIANGLE_STRIP
+			DrawType.TRIANGLE_FAN -> GL2.GL_TRIANGLE_FAN
+			DrawType.TRIANGLES -> GL2.GL_TRIANGLES
 		}
 
 	val VarType.glElementType: Int
