@@ -82,14 +82,14 @@ abstract class AGAwtBase : AG() {
 		var cachedVersion = -1
 		val wtex get() = tex as AwtTexture
 
-		val renderbuffer = IntBuffer.allocate(1)
+		val renderbufferDepth = IntBuffer.allocate(1)
 		val framebuffer = IntBuffer.allocate(1)
 		var oldViewport = IntArray(4)
 
 		override fun start(width: Int, height: Int) {
 			if (cachedVersion != contextVersion) {
 				cachedVersion = contextVersion
-				checkErrors { gl.glGenRenderbuffers(1, renderbuffer) }
+				checkErrors { gl.glGenRenderbuffers(1, renderbufferDepth) }
 				checkErrors { gl.glGenFramebuffers(1, framebuffer) }
 			}
 
@@ -99,11 +99,14 @@ abstract class AGAwtBase : AG() {
 			checkErrors { gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_LINEAR) }
 			checkErrors { gl.glTexImage2D(GL.GL_TEXTURE_2D, 0, GL.GL_RGBA, width, height, 0, GL.GL_RGBA, GL.GL_UNSIGNED_BYTE, null) }
 			checkErrors { gl.glBindTexture(GL.GL_TEXTURE_2D, 0) }
-			checkErrors { gl.glBindRenderbuffer(GL.GL_RENDERBUFFER, renderbuffer[0]) }
+
+			checkErrors { gl.glBindRenderbuffer(GL.GL_RENDERBUFFER, renderbufferDepth[0]) }
+			checkErrors { gl.glRenderbufferStorage(GL.GL_RENDERBUFFER, GL.GL_DEPTH_COMPONENT16, width, height) }
+
 			checkErrors { gl.glBindFramebuffer(GL.GL_FRAMEBUFFER, framebuffer[0]) }
 			checkErrors { gl.glFramebufferTexture2D(GL.GL_FRAMEBUFFER, GL.GL_COLOR_ATTACHMENT0, GL.GL_TEXTURE_2D, wtex.tex, 0) }
-			checkErrors { gl.glRenderbufferStorage(GL.GL_RENDERBUFFER, GL.GL_DEPTH_COMPONENT16, width, height) }
-			checkErrors { gl.glFramebufferRenderbuffer(GL.GL_FRAMEBUFFER, GL.GL_DEPTH_ATTACHMENT, GL.GL_RENDERBUFFER, renderbuffer[0]) }
+			checkErrors { gl.glFramebufferRenderbuffer(GL.GL_FRAMEBUFFER, GL.GL_DEPTH_ATTACHMENT, GL.GL_RENDERBUFFER, renderbufferDepth[0]) }
+
 			checkErrors { gl.glViewport(0, 0, width, height) }
 		}
 
@@ -124,9 +127,9 @@ abstract class AGAwtBase : AG() {
 
 		override fun close() {
 			checkErrors { gl.glDeleteFramebuffers(1, framebuffer) }
-			checkErrors { gl.glDeleteRenderbuffers(1, renderbuffer) }
+			checkErrors { gl.glDeleteRenderbuffers(1, renderbufferDepth) }
 			framebuffer.put(0, 0)
-			renderbuffer.put(0, 0)
+			renderbufferDepth.put(0, 0)
 		}
 	}
 
