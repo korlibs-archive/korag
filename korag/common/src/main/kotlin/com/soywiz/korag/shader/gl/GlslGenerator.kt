@@ -10,15 +10,34 @@ class GlslGenerator(val kind: ShaderType, @Suppress("unused") val gles: Boolean 
 	private val uniforms = hashSetOf<Uniform>()
 	private var programStr = StringBuilder()
 
+	private fun errorType(type: VarType): Nothing = invalidOp("Don't know how to serialize type $type")
+
 	fun typeToString(type: VarType) = when (type) {
-		VarType.Float1 -> "float"
-		VarType.Float2 -> "vec2"
-		VarType.Float3 -> "vec3"
-		VarType.Float4 -> "vec4"
 		VarType.Byte4 -> "vec4"
 		VarType.Mat4 -> "mat4"
 		VarType.TextureUnit -> "sampler2D"
-		else -> invalidOp("Don't know how to serialize type $type")
+		else -> {
+			when (type.kind) {
+				VarKind.BYTE, VarKind.UNSIGNED_BYTE, VarKind.SHORT, VarKind.UNSIGNED_SHORT, VarKind.FLOAT -> {
+					when (type.elementCount) {
+						1 -> "float"
+						2 -> "vec2"
+						3 -> "vec3"
+						4 -> "vec4"
+						else -> errorType(type)
+					}
+				}
+				VarKind.INT -> {
+					when (type.elementCount) {
+						1 -> "int"
+						2 -> "ivec2"
+						3 -> "ivec3"
+						4 -> "ivec4"
+						else -> errorType(type)
+					}
+				}
+			}
+		}
 	}
 
 	fun generate(root: Program.Stm): String {

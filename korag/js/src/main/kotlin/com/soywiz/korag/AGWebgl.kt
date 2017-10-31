@@ -1,10 +1,7 @@
 package com.soywiz.korag
 
 import com.soywiz.korag.geom.Matrix4
-import com.soywiz.korag.shader.Program
-import com.soywiz.korag.shader.Uniform
-import com.soywiz.korag.shader.VarType
-import com.soywiz.korag.shader.VertexLayout
+import com.soywiz.korag.shader.*
 import com.soywiz.korag.shader.gl.toGlSlString
 import com.soywiz.korim.bitmap.Bitmap
 import com.soywiz.korim.bitmap.Bitmap32
@@ -292,14 +289,13 @@ class AGWebgl : AG() {
 	fun getProgram(program: Program): WebglProgram = programs.getOrPut(program.name) { WebglProgram(program) }
 
 	val VarType.webglElementType: Int
-		get() = when (this) {
-			VarType.Int1 -> GL.INT
-			VarType.Float1, VarType.Float2, VarType.Float3, VarType.Float4 -> GL.FLOAT
-			VarType.Short1, VarType.Short2, VarType.Short3, VarType.Short4 -> GL.SHORT
-			VarType.Mat4 -> GL.FLOAT
-			VarType.Bool1 -> GL.UNSIGNED_BYTE
-			VarType.Byte4 -> GL.UNSIGNED_BYTE
-			VarType.TextureUnit -> GL.INT
+		get() = when (this.kind) {
+			VarKind.BYTE -> GL.BYTE
+			VarKind.UNSIGNED_BYTE -> GL.UNSIGNED_BYTE
+			VarKind.SHORT -> GL.SHORT
+			VarKind.UNSIGNED_SHORT -> GL.UNSIGNED_SHORT
+			VarKind.INT -> GL.INT
+			VarKind.FLOAT -> GL.FLOAT
 		}
 
 	val DrawType.glDrawMode: Int

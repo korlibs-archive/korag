@@ -6,20 +6,64 @@ import com.soywiz.korio.JvmOverloads
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.lang.Closeable
 
-enum class VarType(val bytesSize: Int, val elementCount: Int) {
-	TextureUnit(4, elementCount = 1),
-	Bool1(1, elementCount = 1),
-	Int1(4, elementCount = 1),
-	Float1(4, elementCount = 1),
-	Float2(8, elementCount = 2),
-	Float3(12, elementCount = 3),
-	Float4(16, elementCount = 4),
-	Mat4(4 * 4 * 4, elementCount = 16),
-	Byte4(4, elementCount = 4),
-	Short1(2, elementCount = 1),
-	Short2(2, elementCount = 2),
-	Short3(2, elementCount = 3),
-	Short4(2, elementCount = 4)
+enum class VarKind(val bytesSize: Int) {
+	BYTE(1), UNSIGNED_BYTE(1), SHORT(2), UNSIGNED_SHORT(2), INT(4), FLOAT(4)
+}
+
+enum class VarType(val kind: VarKind, val bytesSize: Int, val elementCount: Int) {
+	VOID(VarKind.BYTE, 0, elementCount = 0),
+	TextureUnit(VarKind.INT, 4, elementCount = 1),
+	Mat4(VarKind.FLOAT, 4 * 4 * 4, elementCount = 16),
+
+	Int1(VarKind.INT, 4, elementCount = 1),
+	Float1(VarKind.FLOAT, 4, elementCount = 1),
+	Float2(VarKind.FLOAT, 8, elementCount = 2),
+	Float3(VarKind.FLOAT, 12, elementCount = 3),
+	Float4(VarKind.FLOAT, 16, elementCount = 4),
+	Short1(VarKind.SHORT, 2, elementCount = 1),
+	Short2(VarKind.SHORT, 2, elementCount = 2),
+	Short3(VarKind.SHORT, 2, elementCount = 3),
+	Short4(VarKind.SHORT, 2, elementCount = 4),
+	Bool1(VarKind.UNSIGNED_BYTE, 1, elementCount = 1),
+
+	Byte4(VarKind.UNSIGNED_BYTE, 4, elementCount = 4), // OLD: Is this right?
+
+	SByte1(VarKind.BYTE, 1, elementCount = 1),
+	SByte2(VarKind.BYTE, 1, elementCount = 2),
+	SByte3(VarKind.BYTE, 1, elementCount = 3),
+	SByte4(VarKind.BYTE, 1, elementCount = 4),
+
+	UByte1(VarKind.UNSIGNED_BYTE, 1, elementCount = 1),
+	UByte2(VarKind.UNSIGNED_BYTE, 1, elementCount = 2),
+	UByte3(VarKind.UNSIGNED_BYTE, 1, elementCount = 3),
+	UByte4(VarKind.UNSIGNED_BYTE, 1, elementCount = 4),
+
+	SShort1(VarKind.SHORT, 2, elementCount = 1),
+	SShort2(VarKind.SHORT, 2, elementCount = 2),
+	SShort3(VarKind.SHORT, 2, elementCount = 3),
+	SShort4(VarKind.SHORT, 2, elementCount = 4),
+
+	UShort1(VarKind.UNSIGNED_SHORT, 2, elementCount = 1),
+	UShort2(VarKind.UNSIGNED_SHORT, 2, elementCount = 2),
+	UShort3(VarKind.UNSIGNED_SHORT, 2, elementCount = 3),
+	UShort4(VarKind.UNSIGNED_SHORT, 2, elementCount = 4),
+
+	SInt1(VarKind.INT, 4, elementCount = 1),
+	SInt2(VarKind.INT, 4, elementCount = 2),
+	SInt3(VarKind.INT, 4, elementCount = 3),
+	SInt4(VarKind.INT, 4, elementCount = 4),
+
+	;
+
+	companion object {
+		fun BYTE(count: Int) = when (count) { 0 -> VOID; 1 -> SByte1; 2 -> SByte2; 3 -> SByte3; 4 -> SByte4; else -> invalidOp; }
+		fun UBYTE(count: Int) = when (count) { 0 -> VOID; 1 -> UByte1; 2 -> UByte2; 3 -> UByte3; 4 -> UByte4; else -> invalidOp; }
+		fun SHORT(count: Int) = when (count) { 0 -> VOID; 1 -> SShort1; 2 -> SShort2; 3 -> SShort3; 4 -> SShort4; else -> invalidOp; }
+		fun USHORT(count: Int) = when (count) { 0 -> VOID; 1 -> UShort1; 2 -> UShort2; 3 -> UShort3; 4 -> UShort4; else -> invalidOp; }
+		fun INT(count: Int) = when (count) { 0 -> VOID; 1 -> SInt1; 2 -> SInt2; 3 -> SInt3; 4 -> SInt4; else -> invalidOp; }
+		fun FLOAT(count: Int) = when (count) { 0 -> VOID; 1 -> Float1; 2 -> Float2; 3 -> Float3; 4 -> Float4; else -> invalidOp; }
+	}
+
 }
 
 //val out_Position = Output("gl_Position", VarType.Float4)

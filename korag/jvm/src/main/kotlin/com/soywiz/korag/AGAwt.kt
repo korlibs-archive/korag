@@ -4,10 +4,7 @@ import com.jogamp.newt.opengl.GLWindow
 import com.jogamp.opengl.*
 import com.jogamp.opengl.awt.GLCanvas
 import com.soywiz.korag.geom.Matrix4
-import com.soywiz.korag.shader.Program
-import com.soywiz.korag.shader.Uniform
-import com.soywiz.korag.shader.VarType
-import com.soywiz.korag.shader.VertexLayout
+import com.soywiz.korag.shader.*
 import com.soywiz.korag.shader.gl.toGlSlString
 import com.soywiz.korim.awt.AwtNativeImage
 import com.soywiz.korim.bitmap.Bitmap
@@ -281,14 +278,13 @@ abstract class AGAwtBase : AG() {
 		}
 
 	val VarType.glElementType: Int
-		get() = when (this) {
-			VarType.Int1 -> GL2.GL_INT
-			VarType.Float1, VarType.Float2, VarType.Float3, VarType.Float4 -> GL2.GL_FLOAT
-			VarType.Short1, VarType.Short2, VarType.Short3, VarType.Short4 -> GL2.GL_SHORT
-			VarType.Mat4 -> GL2.GL_FLOAT
-			VarType.Bool1 -> GL2.GL_UNSIGNED_BYTE
-			VarType.Byte4 -> GL2.GL_UNSIGNED_BYTE
-			VarType.TextureUnit -> GL2.GL_INT
+		get() = when (this.kind) {
+			VarKind.BYTE -> GL.GL_BYTE
+			VarKind.UNSIGNED_BYTE -> GL.GL_UNSIGNED_BYTE
+			VarKind.SHORT -> GL.GL_SHORT
+			VarKind.UNSIGNED_SHORT -> GL.GL_UNSIGNED_SHORT
+			VarKind.INT -> GL.GL_UNSIGNED_INT
+			VarKind.FLOAT -> GL.GL_FLOAT
 		}
 
 	private val programs = hashMapOf<Program, AwtProgram>()

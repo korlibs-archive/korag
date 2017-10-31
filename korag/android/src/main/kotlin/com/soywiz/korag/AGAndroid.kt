@@ -3,10 +3,7 @@ package com.soywiz.korag
 import android.opengl.GLES20
 import android.opengl.GLSurfaceView
 import com.soywiz.korag.geom.Matrix4
-import com.soywiz.korag.shader.Program
-import com.soywiz.korag.shader.Uniform
-import com.soywiz.korag.shader.VarType
-import com.soywiz.korag.shader.VertexLayout
+import com.soywiz.korag.shader.*
 import com.soywiz.korag.shader.gl.toGlSlString
 import com.soywiz.korim.bitmap.Bitmap
 import com.soywiz.korim.bitmap.Bitmap32
@@ -214,14 +211,13 @@ class AGAndroid : AG() {
 		}
 
 	val VarType.glElementType: Int
-		get() = when (this) {
-			VarType.Int1 -> GL.GL_INT
-			VarType.Float1, VarType.Float2, VarType.Float3, VarType.Float4 -> GL.GL_FLOAT
-			VarType.Short1, VarType.Short2, VarType.Short3, VarType.Short4 -> GL.GL_SHORT
-			VarType.Mat4 -> GL.GL_FLOAT
-			VarType.Bool1 -> GL.GL_UNSIGNED_BYTE
-			VarType.Byte4 -> GL.GL_UNSIGNED_BYTE
-			VarType.TextureUnit -> GL.GL_INT
+		get() = when (this.kind) {
+			VarKind.BYTE -> GL.GL_BYTE
+			VarKind.UNSIGNED_BYTE -> GL.GL_UNSIGNED_BYTE
+			VarKind.SHORT -> GL.GL_SHORT
+			VarKind.UNSIGNED_SHORT -> GL.GL_UNSIGNED_SHORT
+			VarKind.INT -> GL.GL_INT
+			VarKind.FLOAT -> GL.GL_FLOAT
 		}
 
 	private val programs = hashMapOf<String, AndroidProgram>()
