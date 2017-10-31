@@ -15,6 +15,7 @@ import com.soywiz.korio.mem.FastMemory
 import com.soywiz.korio.util.Once
 import org.khronos.webgl.*
 import org.w3c.dom.HTMLCanvasElement
+import org.w3c.dom.events.KeyboardEvent
 import kotlin.browser.document
 import kotlin.browser.window
 import org.khronos.webgl.WebGLRenderingContext as GL
@@ -40,7 +41,10 @@ fun jsObject(vararg pairs: Pair<String, Any?>): dynamic {
 	return out
 }
 
-class AGWebgl : AG() {
+class AGWebgl : AG(), AGContainer {
+	override val ag: AG = this
+	override val agInput: AGInput = AGInput()
+
 	val canvas = document.createElement("canvas") as HTMLCanvasElement
 	val glOpts = jsObject(
 		"premultipliedAlpha" to false,
@@ -63,6 +67,24 @@ class AGWebgl : AG() {
 			contextVersion++
 			//e.preventDefault()
 		}, false);
+
+		val event = AGInput.KeyEvent()
+
+
+		canvas.addEventListener("keydown", { e ->
+			event.keyCode = e.unsafeCast<KeyboardEvent>().keyCode
+			agInput.onKeyDown(event)
+		}, false)
+
+		canvas.addEventListener("keyup", { e ->
+			event.keyCode = e.unsafeCast<KeyboardEvent>().keyCode
+			agInput.onKeyUp(event)
+		}, false)
+
+		canvas.addEventListener("keypress", { e ->
+			event.keyCode = e.unsafeCast<KeyboardEvent>().keyCode
+			agInput.onKeyTyped(event)
+		}, false)
 	}
 
 	override fun repaint() {
