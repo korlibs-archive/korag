@@ -602,4 +602,6 @@ abstract class AG : Extra by Extra.Mixin() {
 
 	open fun readColor(bitmap: Bitmap32): Unit = TODO()
 	open fun readDepth(width: Int, height: Int, out: FloatArray): Unit = TODO()
+
+	var checkErrors = true
 }

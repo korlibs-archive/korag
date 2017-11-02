@@ -548,8 +548,6 @@ abstract class AGAwtBase : AG() {
 		}
 	}
 
-	@PublishedApi internal val checkErrors = true
-
 	inline fun <T> checkErrors(callback: () -> T): T {
 		val res = callback()
 		if (checkErrors) {

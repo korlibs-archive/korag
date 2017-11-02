@@ -204,6 +204,7 @@ class AGWebgl : AG(), AGContainer {
 
 					gl.pixelStorei(GL.UNPACK_PREMULTIPLY_ALPHA_WEBGL, if (premultiplied) 1 else 0)
 					gl.texImage2D(GL.TEXTURE_2D, 0, type, type, GL.UNSIGNED_BYTE, bmp.canvas)
+					//gl.pixelStorei(GL.UNPACK_COLORSPACE_CONVERSION_WEBGL, 0)
 				}
 				is Bitmap32, is Bitmap8 -> {
 					val width = bmp.width
@@ -214,6 +215,7 @@ class AGWebgl : AG(), AGContainer {
 					val rdata = Uint8Array(data.buffer, 0, width * height * Bpp)
 					val type = if (rgba) GL.RGBA else GL.LUMINANCE
 					gl.pixelStorei(GL.UNPACK_PREMULTIPLY_ALPHA_WEBGL, if (premultiplied xor bmp.premult) 1 else 0)
+					//gl.pixelStorei(GL.UNPACK_COLORSPACE_CONVERSION_WEBGL, 0)
 					gl.texImage2D(GL.TEXTURE_2D, 0, type, width, height, 0, type, GL.UNSIGNED_BYTE, rdata)
 				}
 			}
@@ -547,8 +549,6 @@ class AGWebgl : AG(), AGContainer {
 	}
 
 	override fun createRenderBuffer(): RenderBuffer = WebglRenderBuffer()
-
-	@PublishedApi internal val checkErrors = true
 
 	inline fun <T> checkErrors(callback: () -> T): T {
 		val res = callback()
