@@ -20,6 +20,7 @@ import java.awt.event.*
 import java.awt.image.DataBufferInt
 import java.io.Closeable
 import java.nio.ByteBuffer
+import java.nio.FloatBuffer
 import java.nio.IntBuffer
 
 actual object AGFactoryFactory {
@@ -57,6 +58,7 @@ abstract class AGAwtBase : AG() {
 	var glprofile = GLProfile.getDefault()
 	var glcapabilities = GLCapabilities(glprofile).apply {
 		stencilBits = 8
+		depthBits = 24
 	}
 	var initialized = false
 	lateinit var ad: GLAutoDrawable
@@ -120,9 +122,10 @@ abstract class AGAwtBase : AG() {
 
 		override fun readBitmap(bmp: Bitmap32) {
 			checkErrors { gl.glReadPixels(0, 0, bmp.width, bmp.height, GL.GL_RGBA, GL.GL_UNSIGNED_BYTE, IntBuffer.wrap(bmp.data)) }
+		}
 
-			//val ibuffer = JTranscArrays.nativeReinterpretAsInt(data.data)
-			//for (n in 0 until bmp.area) bmp.data[n] = RGBA.rgbaToBgra(ibuffer[n])
+		override fun readDepth(width: Int, height: Int, out: FloatArray) {
+			checkErrors { gl.glReadPixels(0, 0, width, height, GL.GL_RGBA, GL.GL_UNSIGNED_BYTE, FloatBuffer.wrap(out)) }
 		}
 
 		override fun close() {
@@ -194,7 +197,8 @@ abstract class AGAwtBase : AG() {
 		blending: Blending,
 		uniforms: Map<Uniform, Any>,
 		stencil: StencilState,
-		colorMask: ColorMaskState
+		colorMask: ColorMaskState,
+		renderState: RenderState
 	) {
 		val mustFreeIndices = indices == null
 		val aindices = indices ?: createIndexBuffer((0 until vertexCount).map(Int::toShort).toShortArray())
@@ -249,8 +253,19 @@ abstract class AGAwtBase : AG() {
 			checkErrors { gl.glDisable(GL2.GL_BLEND) }
 		}
 
-		//gl.glDisable(GL2.GL_CULL_FACE)
-		//gl.glFrontFace(GL2.GL_CW)
+		gl.glDisable(GL2.GL_CULL_FACE)
+		gl.glFrontFace(GL2.GL_CW)
+
+		gl.glDepthMask(renderState.depthMask)
+
+		gl.glDepthRange(renderState.depthNear.toDouble(), renderState.depthFar.toDouble())
+
+		if (renderState.depthFunc != CompareMode.ALWAYS) {
+			checkErrors { gl.glEnable(GL2.GL_DEPTH_TEST) }
+			checkErrors { gl.glDepthFunc(renderState.depthFunc.toGl()) }
+		} else {
+			checkErrors { gl.glDisable(GL2.GL_DEPTH_TEST) }
+		}
 
 		checkErrors { gl.glColorMask(colorMask.red, colorMask.green, colorMask.blue, colorMask.alpha) }
 

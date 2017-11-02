@@ -386,6 +386,13 @@ abstract class AG : Extra by Extra.Mixin() {
 		//val enabled = !red || !green || !blue || !alpha
 	}
 
+	data class RenderState(
+		var depthFunc: CompareMode = CompareMode.ALWAYS,
+		var depthMask: Boolean = true,
+		var depthNear: Float = 0f,
+		var depthFar: Float = 1f
+	)
+
 	data class StencilState(
 		var enabled: Boolean = false,
 		var triangleFace: TriangleFace = TriangleFace.FRONT_AND_BACK,
@@ -398,8 +405,24 @@ abstract class AG : Extra by Extra.Mixin() {
 		var writeMask: Int = 0xFF
 	)
 
+	private val dummyRenderState = RenderState()
 	private val dummyStencilState = StencilState()
 	private val dummyColorMaskState = ColorMaskState()
+
+	// @TODO: Keep for compatibility
+	fun draw(
+		vertices: Buffer,
+		program: Program,
+		type: DrawType,
+		vertexLayout: VertexLayout,
+		vertexCount: Int,
+		indices: Buffer? = null,
+		offset: Int = 0,
+		blending: Blending = Blending.NORMAL,
+		uniforms: Map<Uniform, Any> = mapOf(),
+		stencil: StencilState = dummyStencilState,
+		colorMask: ColorMaskState = dummyColorMaskState
+	) = draw(vertices, program, type, vertexLayout, vertexCount, indices, offset, blending, uniforms, stencil, colorMask, dummyRenderState)
 
 	open fun draw(
 		vertices: Buffer,
@@ -412,7 +435,8 @@ abstract class AG : Extra by Extra.Mixin() {
 		blending: Blending = Blending.NORMAL,
 		uniforms: Map<Uniform, Any> = mapOf(),
 		stencil: StencilState = dummyStencilState,
-		colorMask: ColorMaskState = dummyColorMaskState
+		colorMask: ColorMaskState = dummyColorMaskState,
+		renderState: RenderState = dummyRenderState
 	) {
 	}
 
@@ -442,6 +466,7 @@ abstract class AG : Extra by Extra.Mixin() {
 		open fun start(width: Int, height: Int) = Unit
 		open fun end() = Unit
 		open fun readBitmap(bmp: Bitmap32) = Unit
+		open fun readDepth(width: Int, height: Int, out: FloatArray): Unit = TODO("readDepth")
 		override fun close() = Unit
 	}
 
@@ -511,6 +536,23 @@ abstract class AG : Extra by Extra.Mixin() {
 		try {
 			clear(0)
 			callback()
+		} finally {
+			rb.readBitmap(bmp)
+			rb.end()
+			renderingToTexture = oldRendering
+			renderBuffers.free(rb)
+		}
+	}
+
+	inline fun renderToBitmapEx(bmp: Bitmap32, callback: RenderBuffer.() -> Unit) {
+		val rb = renderBuffers.alloc()
+		val oldRendering = renderingToTexture
+		renderingToTexture = true
+
+		rb.start(bmp.width, bmp.height)
+		try {
+			clear(0)
+			callback(rb)
 		} finally {
 			rb.readBitmap(bmp)
 			rb.end()

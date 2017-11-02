@@ -135,7 +135,8 @@ class AGAndroid : AG() {
 		blending: Blending,
 		uniforms: Map<Uniform, Any>,
 		stencil: StencilState,
-		colorMask: ColorMaskState
+		colorMask: ColorMaskState,
+		renderState: RenderState
 	) {
 		val mustFreeIndices = indices == null
 		val aindices = indices ?: createIndexBuffer((0 until vertexCount).map(Int::toShort).toShortArray())

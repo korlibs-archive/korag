@@ -11,6 +11,7 @@ import com.soywiz.korim.format.CanvasNativeImage
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.lang.Closeable
 import com.soywiz.korio.lang.Console
+import com.soywiz.korio.lang.printStackTrace
 import com.soywiz.korio.mem.FastMemory
 import com.soywiz.korio.util.Once
 import org.khronos.webgl.*
@@ -391,7 +392,8 @@ class AGWebgl : AG(), AGContainer {
 		blending: Blending,
 		uniforms: Map<Uniform, Any>,
 		stencil: StencilState,
-		colorMask: ColorMaskState
+		colorMask: ColorMaskState,
+		renderState: RenderState
 	) {
 		val mustFreeIndices = indices == null
 		val aindices = indices ?: createIndexBuffer((0 until vertexCount).map(Int::toShort).toShortArray())
@@ -444,6 +446,17 @@ class AGWebgl : AG(), AGContainer {
 			gl.enable(GL.BLEND)
 			gl.blendEquationSeparate(blending.eqRGB.toGl(), blending.eqA.toGl())
 			gl.blendFuncSeparate(blending.srcRGB.toGl(), blending.dstRGB.toGl(), blending.srcA.toGl(), blending.dstA.toGl())
+		}
+
+		gl.depthMask(renderState.depthMask)
+
+		gl.depthRange(renderState.depthNear, renderState.depthFar)
+
+		if (renderState.depthFunc != CompareMode.ALWAYS) {
+			checkErrors { gl.enable(GL.DEPTH_TEST) }
+			checkErrors { gl.depthFunc(renderState.depthFunc.toGl()) }
+		} else {
+			checkErrors { gl.disable(GL.DEPTH_TEST) }
 		}
 
 		gl.colorMask(colorMask.red, colorMask.green, colorMask.blue, colorMask.alpha)
@@ -534,6 +547,10 @@ class AGWebgl : AG(), AGContainer {
 			for (n in 0 until bmp.area) bmp.data[n] = RGBA.rgbaToBgra(ibuffer[n])
 		}
 
+		override fun readDepth(width: Int, height: Int, out: FloatArray) {
+			gl.readPixels(0, 0, width, height, GL.DEPTH_COMPONENT, GL.FLOAT, out.unsafeCast<Float32Array>())
+		}
+
 		override fun close() {
 			gl.deleteFramebuffer(framebuffer)
 			gl.deleteRenderbuffer(renderbuffer)
@@ -541,4 +558,20 @@ class AGWebgl : AG(), AGContainer {
 	}
 
 	override fun createRenderBuffer(): RenderBuffer = WebglRenderBuffer()
+
+	@PublishedApi internal val checkErrors = true
+
+	inline fun <T> checkErrors(callback: () -> T): T {
+		val res = callback()
+		if (checkErrors) {
+			val error = gl.getError()
+			if (error != GL.NO_ERROR) {
+				Console.error("OpenGL error: $error")
+				//System.err.println(Throwable().stackTrace)
+				Throwable().printStackTrace()
+				//throw RuntimeException("OpenGL error: $error")
+			}
+		}
+		return res
+	}
 }
