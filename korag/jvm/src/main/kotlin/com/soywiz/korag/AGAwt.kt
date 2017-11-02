@@ -120,14 +120,6 @@ abstract class AGAwtBase : AG() {
 			checkErrors { gl.glViewport(oldViewport[0], oldViewport[1], oldViewport[2], oldViewport[3]) }
 		}
 
-		override fun readBitmap(bmp: Bitmap32) {
-			checkErrors { gl.glReadPixels(0, 0, bmp.width, bmp.height, GL.GL_RGBA, GL.GL_UNSIGNED_BYTE, IntBuffer.wrap(bmp.data)) }
-		}
-
-		override fun readDepth(width: Int, height: Int, out: FloatArray) {
-			checkErrors { gl.glReadPixels(0, 0, width, height, GL.GL_RGBA, GL.GL_UNSIGNED_BYTE, FloatBuffer.wrap(out)) }
-		}
-
 		override fun close() {
 			checkErrors { gl.glDeleteFramebuffers(1, framebuffer) }
 			checkErrors { gl.glDeleteRenderbuffers(1, renderbufferDepth) }
@@ -722,6 +714,15 @@ class AGAwt : AGAwtBase(), AGContainer {
 		glcanvas.addMouseListener(mouseEventListener)
 		glcanvas.addGLEventListener(glEventListener)
 		glcanvas.addKeyListener(keyListener)
+	}
+
+	override fun readColor(bitmap: Bitmap32): Unit {
+		checkErrors { gl.glReadPixels(0, 0, bitmap.width, bitmap.height, GL.GL_RGBA, GL.GL_UNSIGNED_BYTE, IntBuffer.wrap(bitmap.data)) }
+	}
+
+	override fun readDepth(width: Int, height: Int, out: FloatArray): Unit {
+		val GL_DEPTH_COMPONENT = 0x1902
+		checkErrors { gl.glReadPixels(0, 0, width, height, GL_DEPTH_COMPONENT, GL.GL_FLOAT, FloatBuffer.wrap(out)) }
 	}
 }
 

@@ -540,17 +540,6 @@ class AGWebgl : AG(), AGContainer {
 			gl.viewport(oldViewport[0], oldViewport[1], oldViewport[2], oldViewport[3])
 		}
 
-		override fun readBitmap(bmp: Bitmap32) {
-			val abuffer = ArrayBuffer(bmp.area * 4)
-			val ibuffer = Int32Array(abuffer)
-			gl.readPixels(0, 0, bmp.width, bmp.height, GL.RGBA, GL.UNSIGNED_BYTE, Uint8Array(abuffer))
-			for (n in 0 until bmp.area) bmp.data[n] = RGBA.rgbaToBgra(ibuffer[n])
-		}
-
-		override fun readDepth(width: Int, height: Int, out: FloatArray) {
-			gl.readPixels(0, 0, width, height, GL.DEPTH_COMPONENT, GL.FLOAT, out.unsafeCast<Float32Array>())
-		}
-
 		override fun close() {
 			gl.deleteFramebuffer(framebuffer)
 			gl.deleteRenderbuffer(renderbuffer)
@@ -573,5 +562,16 @@ class AGWebgl : AG(), AGContainer {
 			}
 		}
 		return res
+	}
+
+	override fun readColor(bmp: Bitmap32) {
+		val abuffer = ArrayBuffer(bmp.area * 4)
+		val ibuffer = Int32Array(abuffer)
+		gl.readPixels(0, 0, bmp.width, bmp.height, GL.RGBA, GL.UNSIGNED_BYTE, Uint8Array(abuffer))
+		for (n in 0 until bmp.area) bmp.data[n] = RGBA.rgbaToBgra(ibuffer[n])
+	}
+
+	override fun readDepth(width: Int, height: Int, out: FloatArray) {
+		gl.readPixels(0, 0, width, height, GL.DEPTH_COMPONENT, GL.FLOAT, out.unsafeCast<Float32Array>())
 	}
 }

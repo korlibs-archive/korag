@@ -465,8 +465,8 @@ abstract class AG : Extra by Extra.Mixin() {
 
 		open fun start(width: Int, height: Int) = Unit
 		open fun end() = Unit
-		open fun readBitmap(bmp: Bitmap32) = Unit
-		open fun readDepth(width: Int, height: Int, out: FloatArray): Unit = TODO("readDepth")
+		fun readBitmap(bmp: Bitmap32) = this@AG.readColor(bmp)
+		fun readDepth(width: Int, height: Int, out: FloatArray): Unit = this@AG.readDepth(width, height, out)
 		override fun close() = Unit
 	}
 
@@ -599,4 +599,7 @@ abstract class AG : Extra by Extra.Mixin() {
 			uniforms = drawBmp_UNIFORMS!!
 		)
 	}
+
+	open fun readColor(bitmap: Bitmap32): Unit = TODO()
+	open fun readDepth(width: Int, height: Int, out: FloatArray): Unit = TODO()
 }
