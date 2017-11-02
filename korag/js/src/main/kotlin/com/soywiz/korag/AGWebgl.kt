@@ -564,11 +564,8 @@ class AGWebgl : AG(), AGContainer {
 		return res
 	}
 
-	override fun readColor(bmp: Bitmap32) {
-		val abuffer = ArrayBuffer(bmp.area * 4)
-		val ibuffer = Int32Array(abuffer)
-		gl.readPixels(0, 0, bmp.width, bmp.height, GL.RGBA, GL.UNSIGNED_BYTE, Uint8Array(abuffer))
-		for (n in 0 until bmp.area) bmp.data[n] = RGBA.rgbaToBgra(ibuffer[n])
+	override fun readColor(bitmap: Bitmap32) {
+		gl.readPixels(0, 0, bitmap.width, bitmap.height, GL.RGBA, GL.UNSIGNED_BYTE, Uint8Array(bitmap.data.unsafeCast<Int32Array>().buffer))
 	}
 
 	override fun readDepth(width: Int, height: Int, out: FloatArray) {
