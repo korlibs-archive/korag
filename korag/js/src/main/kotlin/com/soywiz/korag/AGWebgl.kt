@@ -454,6 +454,8 @@ class AGWebgl : AG(), AGContainer {
 
 		gl.depthRange(renderState.depthNear, renderState.depthFar)
 
+		gl.lineWidth(renderState.lineWidth)
+
 		if (renderState.depthFunc != CompareMode.ALWAYS) {
 			checkErrors { gl.enable(GL.DEPTH_TEST) }
 			checkErrors { gl.depthFunc(renderState.depthFunc.toGl()) }

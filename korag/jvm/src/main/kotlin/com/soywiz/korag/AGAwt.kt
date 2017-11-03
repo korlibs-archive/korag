@@ -252,6 +252,8 @@ abstract class AGAwtBase : AG() {
 
 		gl.glDepthRange(renderState.depthNear.toDouble(), renderState.depthFar.toDouble())
 
+		gl.glLineWidth(renderState.lineWidth)
+
 		if (renderState.depthFunc != CompareMode.ALWAYS) {
 			checkErrors { gl.glEnable(GL2.GL_DEPTH_TEST) }
 			checkErrors { gl.glDepthFunc(renderState.depthFunc.toGl()) }

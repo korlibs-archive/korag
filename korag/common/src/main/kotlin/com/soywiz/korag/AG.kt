@@ -390,7 +390,8 @@ abstract class AG : Extra by Extra.Mixin() {
 		var depthFunc: CompareMode = CompareMode.ALWAYS,
 		var depthMask: Boolean = true,
 		var depthNear: Float = 0f,
-		var depthFar: Float = 1f
+		var depthFar: Float = 1f,
+		var lineWidth: Float = 1f
 	)
 
 	data class StencilState(
