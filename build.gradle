@@ -1,6 +1,6 @@
 buildscript {
-    ext.korimVersion = '0.15.1'
-    ext.kotlinVersion = '1.2.0-beta-88'
+    ext.korimVersion = '0.16.0'
+    ext.kotlinVersion = '1.2.0-rc-39'
     ext.compilerVersion = ext.kotlinVersion
     ext.librariesVersion = ext.kotlinVersion
     ext.eapChannel = 'http://dl.bintray.com/kotlin/kotlin-eap-1.2'
@@ -19,6 +19,12 @@ buildscript {
 allprojects {
     group 'com.soywiz'
     version "0.15.12-SNAPSHOT"
+
+    if (project == rootProject) {
+        new File(rootProject.rootDir, "korag/common/src/main/kotlin/com/soywiz/korag/KoragVersion.kt").write(
+                "package com.soywiz.korag\n\nval KORAG_VERSION = \"$version\""
+        )
+    }
 
     apply plugin: 'java'
     //apply plugin: 'kotlin'
