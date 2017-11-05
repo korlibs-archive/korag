@@ -40,6 +40,11 @@ class AGAndroid : AG() {
 	val glv = GLSurfaceView(KorioAndroidContext)
 	override val nativeComponent: Any = glv
 
+	override fun setViewport(x: Int, y: Int, width: Int, height: Int) {
+		super.setViewport(x, y, width, height)
+		gl.glViewport(x, y, width, height)
+	}
+
 	init {
 		//glv.renderMode = GLSurfaceView.RENDERMODE_WHEN_DIRTY
 		glv.setEGLContextClientVersion(2)
@@ -61,12 +66,7 @@ class AGAndroid : AG() {
 			}
 
 			override fun onSurfaceChanged(gl1: GL10, width: Int, height: Int) {
-				backWidth = width
-				backHeight = height
-
-				//gl = gl1 as GLES20
-				gl.glViewport(0, 0, backWidth, backHeight)
-
+				setViewport(0, 0, width, height)
 				initializeOnce()
 				//resized()
 				onRender(ag)

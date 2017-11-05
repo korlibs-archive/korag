@@ -54,6 +54,12 @@ class AGWebgl : AG(), AGContainer {
 	)
 	//val gl: GL = (canvas.getContext("webgl", glOpts) ?: canvas.getContext("experimental-webgl", glOpts)) as GL
 	val gl: GL = (canvas.getContext("webgl", glOpts) ?: canvas.getContext("experimental-webgl", glOpts)).asDynamic()
+
+	init {
+		(window.asDynamic()).ag = this
+		//(window.asDynamic()).gl = gl
+	}
+
 	override val nativeComponent: Any = canvas
 	override val pixelDensity: Double get() = window.devicePixelRatio ?: 1.0
 	val onReadyOnce = Once()
@@ -93,10 +99,14 @@ class AGWebgl : AG(), AGContainer {
 		onRender(this)
 	}
 
+	override fun setViewport(x: Int, y: Int, width: Int, height: Int) {
+		super.setViewport(x, y, width, height)
+		checkErrors { gl.viewport(x, y, width, height) }
+	}
+
 	override fun resized() {
-		backWidth = canvas.width
-		backHeight = canvas.height
-		gl.viewport(0, 0, backWidth, backHeight)
+		//println("RESIZED: ${canvas.width}x${canvas.height}")
+		setViewport(0, 0, canvas.width, canvas.height)
 		onResized(Unit)
 	}
 
@@ -521,7 +531,7 @@ class AGWebgl : AG(), AGContainer {
 				framebuffer = gl.createFramebuffer()
 			}
 
-			oldViewport = gl.getParameter(GL.VIEWPORT) as IntArray
+			getViewport(oldViewport)
 			//println("oldViewport:${oldViewport.toList()}")
 			gl.bindTexture(GL.TEXTURE_2D, wtex.tex)
 			gl.texParameteri(GL.TEXTURE_2D, GL.TEXTURE_MAG_FILTER, GL.LINEAR)
@@ -533,7 +543,7 @@ class AGWebgl : AG(), AGContainer {
 			gl.framebufferTexture2D(GL.FRAMEBUFFER, GL.COLOR_ATTACHMENT0, GL.TEXTURE_2D, wtex.tex, 0)
 			gl.renderbufferStorage(GL.RENDERBUFFER, GL.DEPTH_COMPONENT16, width, height)
 			gl.framebufferRenderbuffer(GL.FRAMEBUFFER, GL.DEPTH_ATTACHMENT, GL.RENDERBUFFER, renderbuffer)
-			gl.viewport(0, 0, width, height)
+			setViewport(0, 0, width, height)
 		}
 
 		override fun end() {
@@ -541,7 +551,7 @@ class AGWebgl : AG(), AGContainer {
 			gl.bindTexture(GL.TEXTURE_2D, null)
 			gl.bindRenderbuffer(GL.RENDERBUFFER, null)
 			gl.bindFramebuffer(GL.FRAMEBUFFER, null)
-			gl.viewport(oldViewport[0], oldViewport[1], oldViewport[2], oldViewport[3])
+			setViewport(oldViewport)
 		}
 
 		override fun close() {

@@ -37,6 +37,7 @@ object AGFactoryAwt : AGFactory {
 		window.title = title
 		window.setSize(width, height)
 		window.isVisible = true
+
 		window.addGLEventListener(object : GLEventListener {
 			override fun reshape(drawable: GLAutoDrawable, x: Int, y: Int, width: Int, height: Int) = Unit
 			override fun display(drawable: GLAutoDrawable) = Unit
@@ -80,6 +81,11 @@ abstract class AGAwtBase : AG() {
 
 	override fun createBuffer(kind: Buffer.Kind): Buffer = AwtBuffer(kind)
 
+	override fun setViewport(x: Int, y: Int, width: Int, height: Int) {
+		super.setViewport(x, y, width, height)
+		checkErrors { gl.glViewport(x, y, width, height) }
+	}
+
 	inner class AwtRenderBuffer : RenderBuffer() {
 		var cachedVersion = -1
 		val wtex get() = tex as AwtTexture
@@ -97,7 +103,7 @@ abstract class AGAwtBase : AG() {
 				checkErrors { gl.glGenFramebuffers(1, framebuffer) }
 			}
 
-			checkErrors { gl.glGetIntegerv(GL.GL_VIEWPORT, oldViewport, 0) }
+			getViewport(oldViewport)
 			checkErrors { gl.glBindTexture(GL.GL_TEXTURE_2D, wtex.tex) }
 			checkErrors { gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_LINEAR) }
 			checkErrors { gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_LINEAR) }
@@ -110,8 +116,7 @@ abstract class AGAwtBase : AG() {
 			checkErrors { gl.glBindFramebuffer(GL.GL_FRAMEBUFFER, framebuffer[0]) }
 			checkErrors { gl.glFramebufferTexture2D(GL.GL_FRAMEBUFFER, GL.GL_COLOR_ATTACHMENT0, GL.GL_TEXTURE_2D, wtex.tex, 0) }
 			checkErrors { gl.glFramebufferRenderbuffer(GL.GL_FRAMEBUFFER, GL.GL_DEPTH_ATTACHMENT, GL.GL_RENDERBUFFER, renderbufferDepth[0]) }
-
-			checkErrors { gl.glViewport(0, 0, width, height) }
+			setViewport(0, 0, width, height)
 		}
 
 		override fun end() {
@@ -119,7 +124,7 @@ abstract class AGAwtBase : AG() {
 			checkErrors { gl.glBindTexture(GL.GL_TEXTURE_2D, 0) }
 			checkErrors { gl.glBindRenderbuffer(GL.GL_RENDERBUFFER, 0) }
 			checkErrors { gl.glBindFramebuffer(GL.GL_FRAMEBUFFER, 0) }
-			checkErrors { gl.glViewport(oldViewport[0], oldViewport[1], oldViewport[2], oldViewport[3]) }
+			setViewport(oldViewport)
 		}
 
 		override fun close() {
@@ -621,8 +626,13 @@ class AGAwt : AGAwtBase(), AGContainer {
 
 			//println("scale($scaleX, $scaleY)")
 
-			backWidth = (width * pixelDensity).toInt()
-			backHeight = (height * pixelDensity).toInt()
+			//viewport[0] = 0
+			//viewport[1] = 0
+			//viewport[2] = (width * pixelDensity).toInt()
+			//viewport[3] = (height * pixelDensity).toInt()
+
+			setViewport(0, 0, (width * pixelDensity).toInt(), (height * pixelDensity).toInt())
+
 			//d.gl.glViewport(0, 0, width, height)
 			resized()
 			//println("a")

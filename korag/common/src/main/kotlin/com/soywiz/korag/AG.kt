@@ -14,6 +14,7 @@ import com.soywiz.korio.coroutine.CoroutineContext
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.lang.Closeable
 import com.soywiz.korio.mem.FastMemory
+import com.soywiz.korio.typedarray.copyRangeTo
 import com.soywiz.korio.util.Extra
 import com.soywiz.korio.util.Pool
 import com.soywiz.korma.geom.Size
@@ -85,8 +86,6 @@ abstract class AGWindow : AGContainer {
 abstract class AG : Extra by Extra.Mixin() {
 	var contextVersion = 0
 	abstract val nativeComponent: Any
-	open var backWidth: Int = 640
-	open var backHeight: Int = 480
 
 	open val maxTextureSize = Size(2048, 2048)
 
@@ -110,6 +109,25 @@ abstract class AG : Extra by Extra.Mixin() {
 
 	open fun dispose() {
 	}
+
+	val viewport = intArrayOf(0, 0, 640, 480)
+
+	open val backWidth: Int get() = viewport[2]
+	open val backHeight: Int get() = viewport[3]
+
+	protected fun getViewport(out: IntArray): IntArray {
+		this.viewport.copyRangeTo(0, out, 0, 4)
+		return out
+	}
+
+	protected open fun setViewport(x: Int, y: Int, width: Int, height: Int) {
+		viewport[0] = x
+		viewport[1] = y
+		viewport[2] = width
+		viewport[3] = height
+	}
+
+	protected fun setViewport(v: IntArray) = setViewport(v[0], v[1], v[2], v[3])
 
 	enum class BlendEquation {
 		ADD, SUBTRACT, REVERSE_SUBTRACT
@@ -499,14 +517,10 @@ abstract class AG : Extra by Extra.Mixin() {
 		val oldWidth = backWidth
 		val oldHeight = backHeight
 		renderingToTexture = true
-		backWidth = width
-		backHeight = height
 		try {
 			return renderToTextureInternal(width, height, callback)
 		} finally {
 			renderingToTexture = oldRendering
-			backWidth = oldWidth
-			backHeight = oldHeight
 		}
 	}
 
