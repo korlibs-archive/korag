@@ -171,7 +171,7 @@ abstract class AG : Extra by Extra.Mixin() {
 	}
 
 	open class Texture : Closeable {
-		val premultiplied = true
+		open val premultiplied = true
 		var requestMipmaps = false
 		var mipmaps = false; protected set
 		var source: BitmapSourceBase = SyncBitmapSource.NULL
@@ -336,8 +336,10 @@ abstract class AG : Extra by Extra.Mixin() {
 
 	val dummyTexture by lazy { createTexture() }
 
-	open fun createTexture(): Texture = Texture()
+	fun createTexture(): Texture = createTexture(premultiplied = true)
 	fun createTexture(bmp: Bitmap, mipmaps: Boolean = false): Texture = createTexture().upload(bmp, mipmaps)
+	fun createTexture(bmp: Bitmap, mipmaps: Boolean = false, premultiplied: Boolean = true): Texture = createTexture(premultiplied).upload(bmp, mipmaps)
+	open fun createTexture(premultiplied: Boolean): Texture = Texture()
 	open fun createBuffer(kind: Buffer.Kind) = Buffer(kind)
 	fun createIndexBuffer() = createBuffer(Buffer.Kind.INDEX)
 	fun createVertexBuffer() = createBuffer(Buffer.Kind.VERTEX)
@@ -459,7 +461,7 @@ abstract class AG : Extra by Extra.Mixin() {
 			get() {
 				if (cachedTexVersion != contextVersion) {
 					cachedTexVersion = contextVersion
-					_tex = this@AG.createTexture().manualUpload()
+					_tex = this@AG.createTexture(premultiplied = false).manualUpload()
 				}
 				return _tex!!
 			}
@@ -471,7 +473,7 @@ abstract class AG : Extra by Extra.Mixin() {
 		override fun close() = Unit
 	}
 
-	open protected fun createRenderBuffer() = RenderBuffer()
+	open fun createRenderBuffer() = RenderBuffer()
 
 	fun flip() {
 		disposeTemporalPerFrameStuff()

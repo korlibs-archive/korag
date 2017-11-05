@@ -40,7 +40,7 @@ open class LogAG(
 
 	override fun dispose() = log("dispose()")
 
-	inner class LogTexture(val id: Int) : Texture() {
+	inner class LogTexture(val id: Int, override val premultiplied: Boolean) : Texture() {
 		override fun uploadedSource() {
 			log("$this.uploadedBitmap($source, ${source.width}, ${source.height})")
 		}
@@ -69,7 +69,7 @@ open class LogAG(
 	private var bufferId = 0
 	private var renderBufferId = 0
 
-	override fun createTexture(): Texture = LogTexture(textureId++).apply { log("createTexture():$id") }
+	override fun createTexture(premultiplied: Boolean): Texture = LogTexture(textureId++, premultiplied).apply { log("createTexture():$id") }
 
 	override fun createBuffer(kind: Buffer.Kind): Buffer = LogBuffer(bufferId++, kind).apply { log("createBuffer($kind):$id") }
 	override fun draw(

@@ -388,7 +388,7 @@ abstract class AGAwtBase : AG() {
 		checkErrors { gl.glClear(bits) }
 	}
 
-	override fun createTexture(): Texture = AwtTexture(this.gl)
+	override fun createTexture(premultiplied: Boolean): Texture = AwtTexture(this.gl, premultiplied)
 
 	inner class AwtBuffer(kind: Buffer.Kind) : Buffer(kind) {
 		var cachedVersion = -1
@@ -437,7 +437,7 @@ abstract class AGAwtBase : AG() {
 		}
 	}
 
-	inner class AwtTexture(val gl: GL2) : Texture() {
+	inner class AwtTexture(val gl: GL2, override val premultiplied: Boolean) : Texture() {
 		var cachedVersion = -1
 		val texIds = IntArray(1)
 

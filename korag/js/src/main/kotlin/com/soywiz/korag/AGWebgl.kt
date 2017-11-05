@@ -181,7 +181,7 @@ class AGWebgl : AG(), AGContainer {
 		}
 	}
 
-	inner class WebglTexture() : Texture() {
+	inner class WebglTexture(override val premultiplied: Boolean) : Texture() {
 		var cachedVersion = -1
 		private var _tex: WebGLTexture? = null
 		val tex: WebGLTexture?
@@ -306,7 +306,7 @@ class AGWebgl : AG(), AGContainer {
 		}
 	}
 
-	override fun createTexture(): Texture = WebglTexture()
+	override fun createTexture(premultiplied: Boolean): Texture = WebglTexture(premultiplied)
 	override fun createBuffer(kind: Buffer.Kind): Buffer = WebglBuffer(kind)
 
 	private val programs = hashMapOf<String, WebglProgram>()
