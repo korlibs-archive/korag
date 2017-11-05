@@ -71,7 +71,6 @@ class AGWebgl : AG(), AGContainer {
 
 		val event = AGInput.KeyEvent()
 
-
 		canvas.addEventListener("keydown", { e ->
 			event.keyCode = e.unsafeCast<KeyboardEvent>().keyCode
 			agInput.onKeyDown(event)
@@ -93,12 +92,12 @@ class AGWebgl : AG(), AGContainer {
 		onRender(this)
 	}
 
-	override fun resized() {
-		backWidth = canvas.width
-		backHeight = canvas.height
-		gl.viewport(0, 0, backWidth, backHeight)
-		onResized(Unit)
+	override fun _setViewport(x: Int, y: Int, width: Int, height: Int) {
+		gl.viewport(x, y, width, height)
 	}
+
+	override val screenWidth: Int get() = canvas.width
+	override val screenHeight: Int get() = canvas.height
 
 	override fun dispose() {
 		// https://www.khronos.org/webgl/wiki/HandlingContextLost
@@ -521,7 +520,7 @@ class AGWebgl : AG(), AGContainer {
 				framebuffer = gl.createFramebuffer()
 			}
 
-			oldViewport = gl.getParameter(GL.VIEWPORT) as IntArray
+			getViewport(oldViewport)
 			//println("oldViewport:${oldViewport.toList()}")
 			gl.bindTexture(GL.TEXTURE_2D, wtex.tex)
 			gl.texParameteri(GL.TEXTURE_2D, GL.TEXTURE_MAG_FILTER, GL.LINEAR)
@@ -533,7 +532,7 @@ class AGWebgl : AG(), AGContainer {
 			gl.framebufferTexture2D(GL.FRAMEBUFFER, GL.COLOR_ATTACHMENT0, GL.TEXTURE_2D, wtex.tex, 0)
 			gl.renderbufferStorage(GL.RENDERBUFFER, GL.DEPTH_COMPONENT16, width, height)
 			gl.framebufferRenderbuffer(GL.FRAMEBUFFER, GL.DEPTH_ATTACHMENT, GL.RENDERBUFFER, renderbuffer)
-			gl.viewport(0, 0, width, height)
+			setViewport(width, height)
 		}
 
 		override fun end() {
@@ -541,7 +540,7 @@ class AGWebgl : AG(), AGContainer {
 			gl.bindTexture(GL.TEXTURE_2D, null)
 			gl.bindRenderbuffer(GL.RENDERBUFFER, null)
 			gl.bindFramebuffer(GL.FRAMEBUFFER, null)
-			gl.viewport(oldViewport[0], oldViewport[1], oldViewport[2], oldViewport[3])
+			setViewport(oldViewport)
 		}
 
 		override fun close() {

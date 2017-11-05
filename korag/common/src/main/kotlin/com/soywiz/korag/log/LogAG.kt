@@ -28,8 +28,9 @@ open class LogAG(
 	fun getLogAsString(): String = log.joinToString("\n")
 
 	override fun clear(color: Int, depth: Float, stencil: Int, clearColor: Boolean, clearDepth: Boolean, clearStencil: Boolean) = log("clear($color, $depth, $stencil, $clearColor, $clearDepth, $clearStencil)")
-	override var backWidth: Int = width; set(value) = run { field = value; log("backWidth = $value") }
-	override var backHeight: Int = height; set(value) = run { field = value; log("backHeight = $value") }
+
+	override var screenWidth: Int = width; set(value) = run { field = value; log("backWidth = $value") }
+	override var screenHeight: Int = height; set(value) = run { field = value; log("backHeight = $value") }
 
 	override fun repaint() = log("repaint()")
 

@@ -85,8 +85,6 @@ abstract class AGWindow : AGContainer {
 abstract class AG : Extra by Extra.Mixin() {
 	var contextVersion = 0
 	abstract val nativeComponent: Any
-	open var backWidth: Int = 640
-	open var backHeight: Int = 480
 
 	open val maxTextureSize = Size(2048, 2048)
 
@@ -104,7 +102,46 @@ abstract class AG : Extra by Extra.Mixin() {
 	open fun repaint() {
 	}
 
+	val viewport = intArrayOf(0, 0, 640, 480)
+
+	val viewportX: Int get() = viewport[0]
+	val viewportY: Int get() = viewport[1]
+	val viewportWidth: Int get() = viewport[2]
+	val viewportHeight: Int get() = viewport[3]
+
+	val backWidth: Int get() = viewport[2]
+	val backHeight: Int get() = viewport[3]
+
+	open val screenWidth: Int = 640
+	open val screenHeight: Int = 480
+
+	//abstract val backWidth: Int
+	//abstract val backHeight: Int
+
+
+	fun setViewport(x: Int, y: Int, width: Int, height: Int) {
+		viewport[0] = x
+		viewport[1] = y
+		viewport[2] = width
+		viewport[3] = height
+		_setViewport(x, y, width, height)
+	}
+
+	fun getViewport(out: IntArray): IntArray {
+		for (n in 0 until 4) out[n] = viewport[n]
+		return out
+	}
+
+	open fun _setViewport(x: Int, y: Int, width: Int, height: Int) {
+	}
+
+	fun setViewport(v: IntArray) = setViewport(v[0], v[1], v[2], v[3])
+
+	fun setViewport(width: Int, height: Int) = setViewport(0, 0, width, height)
+
 	open fun resized() {
+		println("RESIZED: ${screenWidth}x${screenHeight}")
+		setViewport(0, 0, screenWidth, screenHeight)
 		onResized(Unit)
 	}
 
@@ -496,17 +533,11 @@ abstract class AG : Extra by Extra.Mixin() {
 
 	inline fun renderToTexture(width: Int, height: Int, callback: () -> Unit): RenderTexture {
 		val oldRendering = renderingToTexture
-		val oldWidth = backWidth
-		val oldHeight = backHeight
 		renderingToTexture = true
-		backWidth = width
-		backHeight = height
 		try {
 			return renderToTextureInternal(width, height, callback)
 		} finally {
 			renderingToTexture = oldRendering
-			backWidth = oldWidth
-			backHeight = oldHeight
 		}
 	}
 

@@ -65,8 +65,6 @@ abstract class AGAwtBase : AG() {
 	lateinit var gl: GL2
 	lateinit var glThread: Thread
 
-	override var pixelDensity: Double = 1.0
-
 	protected fun setAutoDrawable(d: GLAutoDrawable) {
 		glThread = Thread.currentThread()
 		ad = d
@@ -79,6 +77,10 @@ abstract class AGAwtBase : AG() {
 	//val queue = LinkedList<(gl: GL) -> Unit>()
 
 	override fun createBuffer(kind: Buffer.Kind): Buffer = AwtBuffer(kind)
+
+	override fun _setViewport(x: Int, y: Int, width: Int, height: Int) {
+		checkErrors { gl.glViewport(x, y, width, height) }
+	}
 
 	inner class AwtRenderBuffer : RenderBuffer() {
 		var cachedVersion = -1
@@ -97,7 +99,8 @@ abstract class AGAwtBase : AG() {
 				checkErrors { gl.glGenFramebuffers(1, framebuffer) }
 			}
 
-			checkErrors { gl.glGetIntegerv(GL.GL_VIEWPORT, oldViewport, 0) }
+			getViewport(oldViewport)
+
 			checkErrors { gl.glBindTexture(GL.GL_TEXTURE_2D, wtex.tex) }
 			checkErrors { gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_LINEAR) }
 			checkErrors { gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_LINEAR) }
@@ -111,7 +114,7 @@ abstract class AGAwtBase : AG() {
 			checkErrors { gl.glFramebufferTexture2D(GL.GL_FRAMEBUFFER, GL.GL_COLOR_ATTACHMENT0, GL.GL_TEXTURE_2D, wtex.tex, 0) }
 			checkErrors { gl.glFramebufferRenderbuffer(GL.GL_FRAMEBUFFER, GL.GL_DEPTH_ATTACHMENT, GL.GL_RENDERBUFFER, renderbufferDepth[0]) }
 
-			checkErrors { gl.glViewport(0, 0, width, height) }
+			setViewport(width, height)
 		}
 
 		override fun end() {
@@ -119,7 +122,7 @@ abstract class AGAwtBase : AG() {
 			checkErrors { gl.glBindTexture(GL.GL_TEXTURE_2D, 0) }
 			checkErrors { gl.glBindRenderbuffer(GL.GL_RENDERBUFFER, 0) }
 			checkErrors { gl.glBindFramebuffer(GL.GL_FRAMEBUFFER, 0) }
-			checkErrors { gl.glViewport(oldViewport[0], oldViewport[1], oldViewport[2], oldViewport[3]) }
+			setViewport(oldViewport)
 		}
 
 		override fun close() {
@@ -597,34 +600,37 @@ class AGAwt : AGAwtBase(), AGContainer {
 		//}
 	}
 
-	override fun resized() {
-		onResized(Unit)
-	}
-
 	private fun updateMouse(e: MouseEvent) {
 		this.agInput.mouseEvent.x = e.x
 		this.agInput.mouseEvent.y = e.y
 	}
 
+
+
 	private fun updateKey(e: KeyEvent) {
 		this.agInput.keyEvent.keyCode = e.keyCode
 	}
 
+	val scaleX get() = glcanvas.width.toDouble() / glcanvas.surfaceWidth.toDouble()
+	val scaleY get() = glcanvas.height.toDouble() / glcanvas.surfaceHeight.toDouble()
+	override val pixelDensity get() = (scaleX + scaleY) * 0.5
+
+	var _screenWidth: Int = 640
+	var _screenHeight: Int = 480
+
+	override val screenWidth: Int get() = glcanvas.width
+	override val screenHeight: Int get() = glcanvas.height
+
+	//override val screenWidth: Int get() = _screenWidth
+	//override val screenHeight: Int get() = _screenHeight
+
 	val glEventListener = object : GLEventListener {
 		override fun reshape(d: GLAutoDrawable, x: Int, y: Int, width: Int, height: Int) {
+			_screenWidth = width
+			_screenHeight = height
 			setAutoDrawable(d)
-
-			val scaleX = glcanvas.width.toDouble() / glcanvas.surfaceWidth.toDouble()
-			val scaleY = glcanvas.height.toDouble() / glcanvas.surfaceHeight.toDouble()
-
-			pixelDensity = (scaleX + scaleY) * 0.5
-
-			//println("scale($scaleX, $scaleY)")
-
-			backWidth = (width * pixelDensity).toInt()
-			backHeight = (height * pixelDensity).toInt()
-			//d.gl.glViewport(0, 0, width, height)
 			resized()
+			//println("RESHAPE")
 			//println("a")
 		}
 
