@@ -89,6 +89,8 @@ abstract class AGAwtBase : AG() {
 		var oldViewport = IntArray(4)
 
 		override fun start(width: Int, height: Int) {
+			gl.swapInterval = 0
+
 			if (cachedVersion != contextVersion) {
 				cachedVersion = contextVersion
 				checkErrors { gl.glGenRenderbuffers(1, renderbufferDepth) }
