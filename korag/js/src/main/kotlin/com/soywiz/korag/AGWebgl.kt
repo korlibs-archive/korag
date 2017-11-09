@@ -134,11 +134,16 @@ class AGWebgl : AG(), AGContainer {
 		gl.clear(bits)
 	}
 
+	data class MyUniformLocation(val location: WebGLUniformLocation?)
+
 	inner class WebglProgram(val p: Program) : Closeable {
 		var program = gl.createProgram()
 		var cachedVersion = -1
 		var vertex: WebGLShader? = null
 		var fragment: WebGLShader? = null
+
+		// @TODO: Optimize (IntIntMap or just an array)
+		val uniformLocations = HashMap<Uniform, MyUniformLocation>()
 
 		fun createShader(type: Int, source: String): WebGLShader? {
 			val shader = gl.createShader(type)
@@ -188,6 +193,11 @@ class AGWebgl : AG(), AGContainer {
 			gl.deleteShader(this.vertex)
 			gl.deleteShader(this.fragment)
 			gl.deleteProgram(this.program)
+		}
+
+		fun uniformLocation(uniform: Uniform): WebGLUniformLocation? {
+			val location = uniformLocations.getOrPut(uniform) { MyUniformLocation(gl.getUniformLocation(program, uniform.name)) }
+			return location?.location
 		}
 	}
 
@@ -431,7 +441,7 @@ class AGWebgl : AG(), AGContainer {
 		}
 		var textureUnit = 0
 		for ((uniform, value) in uniforms) {
-			val location = glGetUniformLocation(glProgram, uniform.name) ?: continue
+			val location = glProgram.uniformLocation(uniform) ?: continue
 			when (uniform.type) {
 				VarType.TextureUnit -> {
 					val unit = value as TextureUnit
@@ -500,10 +510,6 @@ class AGWebgl : AG(), AGContainer {
 
 	private fun glUniformMatrix4fv(location: WebGLUniformLocation, b: Boolean, values: FloatArray) {
 		gl.uniformMatrix4fv(location, b, (values as Float32Array))
-	}
-
-	private fun glGetUniformLocation(glProgram: WebglProgram, name: String): WebGLUniformLocation? {
-		return gl.getUniformLocation(glProgram.program, name)
 	}
 
 	val tempTextures = arrayListOf<Texture>()

@@ -98,6 +98,10 @@ open class Varying(name: String, type: VarType) : Variable(name, type) {
 }
 
 open class Uniform(name: String, type: VarType) : Variable(name, type) {
+	companion object {
+		var lastUid = 0
+	}
+	val uid = lastUid++
 	override fun toString(): String = "Uniform($name)"
 }
 
