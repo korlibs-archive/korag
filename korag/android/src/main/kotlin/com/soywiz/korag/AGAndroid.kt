@@ -2,7 +2,7 @@ package com.soywiz.korag
 
 import android.opengl.GLES20
 import android.opengl.GLSurfaceView
-import com.soywiz.korag.geom.Matrix4
+import com.soywiz.kmem.FastMemory
 import com.soywiz.korag.shader.*
 import com.soywiz.korag.shader.gl.toGlSlString
 import com.soywiz.korim.bitmap.Bitmap
@@ -13,8 +13,8 @@ import com.soywiz.korim.color.RGBA
 import com.soywiz.korio.android.KorioAndroidContext
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.error.unsupported
-import com.soywiz.korio.mem.FastMemory
 import com.soywiz.korio.util.Once
+import com.soywiz.korma.Matrix4
 import java.io.Closeable
 import java.nio.ByteBuffer
 import javax.microedition.khronos.egl.EGLConfig
@@ -298,7 +298,7 @@ class AGAndroid : AG() {
 				_bind(id)
 				if (mem != null) {
 					val mem2: FastMemory? = mem
-					val bb = mem2?.buffer
+					val bb = mem2?.buffer?.buffer
 					if (bb != null) {
 						val pos = bb.position()
 						bb.position(memOffset)
@@ -336,12 +336,12 @@ class AGAndroid : AG() {
 				is Bitmap8 -> {
 					val mem = FastMemory.alloc(bmp.area)
 					mem.setAlignedArrayInt8(0, bmp.data, 0, bmp.area)
-					return mem.buffer
+					return mem.buffer.buffer
 				}
 				is Bitmap32 -> {
 					val mem = FastMemory.alloc(bmp.area * 4)
 					mem.setAlignedArrayInt32(0, bmp.data, 0, bmp.area)
-					return mem.buffer
+					return mem.buffer.buffer
 				}
 				else -> unsupported()
 			}

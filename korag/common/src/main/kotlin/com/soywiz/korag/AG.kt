@@ -1,6 +1,9 @@
 package com.soywiz.korag
 
-import com.soywiz.korag.geom.Matrix4
+import com.soywiz.kds.Extra
+import com.soywiz.kds.Pool
+import com.soywiz.kmem.FastMemory
+import com.soywiz.kmem.arraycopy
 import com.soywiz.korag.shader.Program
 import com.soywiz.korag.shader.Uniform
 import com.soywiz.korag.shader.VertexLayout
@@ -13,10 +16,7 @@ import com.soywiz.korio.async.async
 import com.soywiz.korio.coroutine.CoroutineContext
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.lang.Closeable
-import com.soywiz.korio.mem.FastMemory
-import com.soywiz.korio.typedarray.copyRangeTo
-import com.soywiz.korio.util.Extra
-import com.soywiz.korio.util.Pool
+import com.soywiz.korma.Matrix4
 import com.soywiz.korma.geom.Size
 import kotlin.coroutines.experimental.EmptyCoroutineContext
 
@@ -116,7 +116,7 @@ abstract class AG : Extra by Extra.Mixin() {
 	open val backHeight: Int get() = viewport[3]
 
 	protected fun getViewport(out: IntArray): IntArray {
-		this.viewport.copyRangeTo(0, out, 0, 4)
+		arraycopy(this.viewport, 0, out, 0, 4)
 		return out
 	}
 

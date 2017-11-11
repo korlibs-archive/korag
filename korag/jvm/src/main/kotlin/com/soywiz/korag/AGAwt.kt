@@ -3,7 +3,7 @@ package com.soywiz.korag
 import com.jogamp.newt.opengl.GLWindow
 import com.jogamp.opengl.*
 import com.jogamp.opengl.awt.GLCanvas
-import com.soywiz.korag.geom.Matrix4
+import com.soywiz.kmem.FastMemory
 import com.soywiz.korag.shader.*
 import com.soywiz.korag.shader.gl.toGlSlString
 import com.soywiz.korim.awt.AwtNativeImage
@@ -14,8 +14,8 @@ import com.soywiz.korim.bitmap.NativeImage
 import com.soywiz.korim.color.RGBA
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.error.unsupported
-import com.soywiz.korio.mem.FastMemory
 import com.soywiz.korio.util.Once
+import com.soywiz.korma.Matrix4
 import java.awt.event.*
 import java.awt.image.DataBufferInt
 import java.io.Closeable
@@ -423,7 +423,7 @@ abstract class AGAwtBase : AG() {
 				_bind(gl, id)
 				if (mem != null) {
 					val mem2: FastMemory = mem!!
-					val bb = mem2.buffer
+					val bb = mem2.buffer.buffer
 					val old = bb.position()
 					bb.position(memOffset)
 					checkErrors { gl.glBufferData(glKind, memLength.toLong(), bb, GL.GL_STATIC_DRAW) }
@@ -468,12 +468,12 @@ abstract class AGAwtBase : AG() {
 						mem.setAlignedInt32(n, RGBA.rgbaToBgra(data[n]))
 					}
 					//mem.setArrayInt32(0, data, 0, bmp.area)
-					return mem.buffer
+					return mem.buffer.buffer
 				}
 				is Bitmap8 -> {
 					val mem: FastMemory = FastMemory.alloc(bmp.area)
 					mem.setAlignedArrayInt8(0, bmp.data, 0, bmp.area)
-					return mem.buffer
+					return mem.buffer.buffer
 				}
 				is Bitmap32 -> {
 					val abmp: Bitmap32 = if (premultiplied) bmp.premultipliedIfRequired() else bmp.depremultipliedIfRequired()
@@ -481,7 +481,7 @@ abstract class AGAwtBase : AG() {
 					//val abmp: Bitmap32 = bmp
 					val mem = FastMemory.alloc(abmp.area * 4)
 					mem.setAlignedArrayInt32(0, abmp.data, 0, abmp.area)
-					return mem.buffer
+					return mem.buffer.buffer
 				}
 				else -> unsupported()
 			}

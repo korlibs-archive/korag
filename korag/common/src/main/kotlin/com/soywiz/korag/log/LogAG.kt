@@ -1,5 +1,6 @@
 package com.soywiz.korag.log
 
+import com.soywiz.kmem.FastMemory
 import com.soywiz.korag.AG
 import com.soywiz.korag.shader.Program
 import com.soywiz.korag.shader.Uniform
@@ -7,7 +8,6 @@ import com.soywiz.korag.shader.VarType
 import com.soywiz.korag.shader.VertexLayout
 import com.soywiz.korim.bitmap.Bitmap32
 import com.soywiz.korio.lang.printStackTrace
-import com.soywiz.korio.mem.FastMemory
 
 open class LogAG(
 	width: Int = 640,
@@ -133,6 +133,6 @@ open class LogAG(
 	override fun disposeTemporalPerFrameStuff() = log("disposeTemporalPerFrameStuff()")
 	override fun createRenderBuffer(): RenderBuffer = LogRenderBuffer(renderBufferId++).apply { log("createRenderBuffer():$id") }
 	override fun flipInternal() = log("flipInternal()")
-	override fun readColor(bitmap: Bitmap32)  = log("$this.readBitmap($bitmap)")
-	override fun readDepth(width: Int, height: Int, out: FloatArray)  = log("$this.readDepth($width, $height, $out)")
+	override fun readColor(bitmap: Bitmap32) = log("$this.readBitmap($bitmap)")
+	override fun readDepth(width: Int, height: Int, out: FloatArray) = log("$this.readDepth($width, $height, $out)")
 }

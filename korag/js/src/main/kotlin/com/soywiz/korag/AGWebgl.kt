@@ -1,6 +1,6 @@
 package com.soywiz.korag
 
-import com.soywiz.korag.geom.Matrix4
+import com.soywiz.kmem.FastMemory
 import com.soywiz.korag.shader.*
 import com.soywiz.korag.shader.gl.toGlSlString
 import com.soywiz.korim.bitmap.Bitmap
@@ -12,8 +12,8 @@ import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.lang.Closeable
 import com.soywiz.korio.lang.Console
 import com.soywiz.korio.lang.printStackTrace
-import com.soywiz.korio.mem.FastMemory
 import com.soywiz.korio.util.Once
+import com.soywiz.korma.Matrix4
 import org.khronos.webgl.*
 import org.w3c.dom.HTMLCanvasElement
 import org.w3c.dom.events.KeyboardEvent
@@ -310,7 +310,7 @@ class AGWebgl : AG(), AGContainer {
 
 			if (dirty) {
 				val mem2: FastMemory = mem!!
-				val buffer = mem2.buffer
+				val buffer = mem2.i8
 				val typedArray = Int8Array(buffer.buffer, memOffset, memLength)
 				//console.methods["log"](target)
 				//console.methods["log"](typedArray)
