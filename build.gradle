@@ -1,5 +1,5 @@
 buildscript {
-    ext.korimVersion = '0.17.1'
+    ext.korimVersion = '0.17.3'
     ext.kotlinVersion = '1.2.0-rc-39'
     ext.compilerVersion = ext.kotlinVersion
     ext.librariesVersion = ext.kotlinVersion
