@@ -571,8 +571,9 @@ class AGWebgl : AG(), AGContainer {
 	inline fun <T> checkErrors(callback: () -> T): T {
 		val res = callback()
 		if (checkErrors) {
-			val error = gl.getError()
-			if (error != GL.NO_ERROR) {
+			val error = gl.getError() // @TODO: Kotlin.JS bug? Generates WebGLRenderingContext$Companion!! Just for this because of the inline.
+			//if (error != GL.NO_ERROR) {
+			if (error != 0) {
 				Console.error("OpenGL error: $error")
 				//System.err.println(Throwable().stackTrace)
 				Throwable().printStackTrace()
