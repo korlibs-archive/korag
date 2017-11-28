@@ -14,7 +14,7 @@ buildscript {
 
 allprojects {
     group 'com.soywiz'
-    version "0.17.5-SNAPSHOT"
+    version "0.18.0"
 
     if (project == rootProject) {
         new File(rootProject.rootDir, "korag/common/src/main/kotlin/com/soywiz/korag/KoragVersion.kt").write(
