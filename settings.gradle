@@ -7,7 +7,11 @@ include(
         'korag-js',
 )
 
-project(':korag-common').projectDir = file('korag/common')
-project(':korag').projectDir = file('korag/jvm')
-project(':korag-android').projectDir = file('korag/android')
-project(':korag-js').projectDir = file('korag/js')
+def register(String base) {
+    findProject(":$base-common")?.projectDir = file("$base/common")
+    findProject(":$base")?.projectDir = file("$base/jvm")
+    findProject(":$base-js")?.projectDir = file("$base/js")
+    findProject(":$base-android")?.projectDir = file("$base/android")
+}
+
+register('korag')
