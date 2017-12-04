@@ -1,3 +1,3 @@
 package com.soywiz.korag
 
-val KORAG_VERSION = "unspecified"
+internal val KORAG_VERSION = "unspecified"
