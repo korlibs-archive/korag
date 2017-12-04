@@ -580,6 +580,20 @@ class AGAwt : AGAwtBase(), AGContainer {
 
 	override val agInput: AGInput = AGInput()
 
+	override fun offscreenRendering(callback: () -> Unit) {
+		if (!glcanvas.context.isCurrent) {
+			glcanvas.context.makeCurrent()
+			try {
+				callback()
+			} finally {
+				glcanvas.context.release()
+			}
+		} else {
+			callback()
+		}
+	}
+
+
 	/*
 	override var mouseX: Int = 0
 	override var mouseY: Int = 0

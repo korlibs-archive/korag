@@ -100,6 +100,10 @@ abstract class AG : Extra by Extra.Mixin() {
 	val onRender = Signal<AG>()
 	val onResized = Signal<Unit>()
 
+	open fun offscreenRendering(callback: () -> Unit) {
+		callback()
+	}
+
 	open fun repaint() {
 	}
 
