@@ -3,7 +3,7 @@ package com.soywiz.korag.shader.gl
 import com.soywiz.korag.shader.*
 import com.soywiz.korio.error.invalidOp
 
-class GlslGenerator(val kind: ShaderType, @Suppress("unused") val gles: Boolean = true) : Program.Visitor() {
+class GlslGenerator(val kind: ShaderType, @Suppress("unused") val gles: Boolean = true, val version: Int = 100) : Program.Visitor() {
 	private val temps = hashSetOf<Temp>()
 	private val attributes = hashSetOf<Attribute>()
 	private val varyings = hashSetOf<Varying>()
@@ -58,7 +58,7 @@ class GlslGenerator(val kind: ShaderType, @Suppress("unused") val gles: Boolean 
 		for (v in varyings) prefix += "varying ${typeToString(v.type)} ${v.name};"
 
 		val precissions = arrayListOf<String>()
-		precissions += "#version 100"
+		precissions += "#version $version"
 		precissions += "#ifdef GL_ES"
 		precissions += "precision mediump float;"
 		precissions += "precision mediump int;"

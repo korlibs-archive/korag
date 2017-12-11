@@ -5,7 +5,7 @@ import com.jogamp.opengl.*
 import com.jogamp.opengl.awt.GLCanvas
 import com.soywiz.kmem.FastMemory
 import com.soywiz.korag.shader.*
-import com.soywiz.korag.shader.gl.toGlSlString
+import com.soywiz.korag.shader.gl.toNewGlslString
 import com.soywiz.korim.awt.AwtNativeImage
 import com.soywiz.korim.bitmap.Bitmap
 import com.soywiz.korim.bitmap.Bitmap32
@@ -323,12 +323,20 @@ abstract class AGAwtBase : AG() {
 		var fragmentShaderId: Int = 0
 		var vertexShaderId: Int = 0
 
+		private fun String.replaceVersion(version: Int) = this.replace("#version 100", "#version $version")
+
 		private fun ensure() {
 			if (cachedVersion != contextVersion) {
 				cachedVersion = contextVersion
 				id = checkErrors { gl.glCreateProgram() }
-				fragmentShaderId = createShader(GL2.GL_FRAGMENT_SHADER, program.fragment.toGlSlString())
-				vertexShaderId = createShader(GL2.GL_VERTEX_SHADER, program.vertex.toGlSlString())
+
+				val glslVersionString = gl.glGetString(GL2.GL_SHADING_LANGUAGE_VERSION)
+				val glslVersionInt = glslVersionString.replace(".", "").trim().toIntOrNull() ?: 100
+
+				println("GL_SHADING_LANGUAGE_VERSION: $glslVersionInt : $glslVersionString")
+
+				fragmentShaderId = createShader(GL2.GL_FRAGMENT_SHADER, program.fragment.toNewGlslString(gles = false, version = glslVersionInt))
+				vertexShaderId = createShader(GL2.GL_VERTEX_SHADER, program.vertex.toNewGlslString(gles = false, version = glslVersionInt))
 				checkErrors { gl.glAttachShader(id, fragmentShaderId) }
 				checkErrors { gl.glAttachShader(id, vertexShaderId) }
 				checkErrors { gl.glLinkProgram(id) }
