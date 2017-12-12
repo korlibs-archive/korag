@@ -21,12 +21,8 @@ buildscript {
 
     dependencies {
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion"
-        classpath "gradle.plugin.com.soywiz:korlibs-build-gradle-plugin:0.1.2"
+        classpath "gradle.plugin.com.soywiz:korlibs-build-gradle-plugin:0.1.3"
     }
 }
 
 apply plugin: 'com.soywiz.korlibs-build-gradle-plugin'
-
-def verFile = new File(rootProject.rootDir, "korag/common/src/main/kotlin/com/soywiz/korag/KoragVersion.kt")
-verFile.parentFile.mkdirs()
-verFile.write("package com.soywiz.korag\n\ninternal val KORAG_VERSION = \"$projectVersion\"")
