@@ -1,3 +1,3 @@
 package com.soywiz.korag
 
-internal val KORAG_VERSION = "0.18.2-SNAPSHOT"
+internal val KORAG_VERSION = "0.18.2"
