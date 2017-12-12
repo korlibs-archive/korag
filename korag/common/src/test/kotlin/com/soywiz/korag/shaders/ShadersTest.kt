@@ -8,7 +8,7 @@ import kotlin.test.assertEquals
 
 class ShadersTest {
 	@Test
-	fun name() {
+	fun testGlslGeneration() {
 		val vs = VertexShader {
 			IF(true.lit) {
 				SET(DefaultShaders.t_Temp1, 1.lit * 2.lit)

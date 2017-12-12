@@ -6,7 +6,7 @@ import org.junit.Test
 
 class AGTest {
 	@Test
-	fun name() = syncTest {
+	fun testOnReady() = syncTest {
 		val ag = AGFactorySoftware().create()
 		val buffer = ag.createIndexBuffer()
 		buffer.upload(intArrayOf(1, 2, 3, 4))
