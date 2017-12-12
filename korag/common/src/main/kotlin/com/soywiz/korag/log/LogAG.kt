@@ -100,10 +100,11 @@ open class LogAG(
 			if (missingAttributes.isNotEmpty()) log("::draw.ERROR.Missing:$missingAttributes")
 			if (extraAttributes.isNotEmpty()) log("::draw.ERROR.Unexpected:$extraAttributes")
 
-			val vertexMem = (vertices as LogBuffer).logmem!!
-			val vertexMemOffset = (vertices as LogBuffer).logmemOffset
+			val vertexBuffer = vertices as LogBuffer
+			val vertexMem = vertexBuffer.logmem!!
+			val vertexMemOffset = vertexBuffer.logmemOffset
 			val indexMem = (indices as LogBuffer).logmem
-			val _indices = (offset until offset + vertexCount).map { indexMem!!.getAlignedInt16(it) ?: 0 }
+			val _indices = (offset until offset + vertexCount).map { indexMem!!.getAlignedInt16(it) }
 			log("::draw.indices=$_indices")
 			for (index in _indices.sorted().distinct()) {
 				val os = index * vertexLayout.totalSize
