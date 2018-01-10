@@ -637,27 +637,17 @@ class AGAwt : AGAwtBase(), AGContainer {
 		this.agInput.keyEvent.keyCode = e.keyCode
 	}
 
+	private val tempFloat4 = FloatArray(4)
+
 	val glEventListener = object : GLEventListener {
 		override fun reshape(d: GLAutoDrawable, x: Int, y: Int, width: Int, height: Int) {
 			setAutoDrawable(d)
 
-			val scaleX = glcanvas.width.toDouble() / glcanvas.surfaceWidth.toDouble()
-			val scaleY = glcanvas.height.toDouble() / glcanvas.surfaceHeight.toDouble()
+			val (scaleX, scaleY) = glcanvas.getCurrentSurfaceScale(tempFloat4)
+			pixelDensity = (scaleX + scaleY) / 2.0
+			setViewport(0, 0, width, height)
 
-			pixelDensity = (scaleX + scaleY) * 0.5
-
-			//println("scale($scaleX, $scaleY)")
-
-			//viewport[0] = 0
-			//viewport[1] = 0
-			//viewport[2] = (width * pixelDensity).toInt()
-			//viewport[3] = (height * pixelDensity).toInt()
-
-			setViewport(0, 0, (width * pixelDensity).toInt(), (height * pixelDensity).toInt())
-
-			//d.gl.glViewport(0, 0, width, height)
 			resized()
-			//println("a")
 		}
 
 		var onReadyOnce = Once()
