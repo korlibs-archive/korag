@@ -27,14 +27,14 @@ public class RenderExample {
         GLDrawableFactory factory = GLDrawableFactory.getFactory(glp);
 
         // TODO: IF I USE OFFSCREEN DRAWABLE, THIS DOESN'T DRAW ANYTHING
-        // GLOffscreenAutoDrawable drawable = factory.createOffscreenAutoDrawable(null,caps,null,width,height);
+        GLOffscreenAutoDrawable drawable = factory.createOffscreenAutoDrawable(null,caps,null,width,height);
 
-        GLAutoDrawable drawable = factory.createOffscreenAutoDrawable(
-                factory.getDefaultDevice(),
-                factory.getAvailableCapabilities(factory.getDefaultDevice()).get(0),
-                new DefaultGLCapabilitiesChooser(),
-                width, height
-        );
+        //GLAutoDrawable drawable = factory.createOffscreenAutoDrawable(
+        //        factory.getDefaultDevice(),
+        //        factory.getAvailableCapabilities(factory.getDefaultDevice()).get(0),
+        //        new DefaultGLCapabilitiesChooser(),
+        //        width, height
+        //);
         drawable.display();
         drawable.getContext().makeCurrent();
         new RenderExample().render(drawable);
