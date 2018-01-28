@@ -1,5 +1,5 @@
 buildscript {
-    ext.projectVersion = '0.19.2'
+    ext.projectVersion = '0.19.3-SNAPSHOT'
     ext.projectName = 'korag'
     ext.projectGroup = 'com.soywiz'
     ext.projectDesc = 'korag: Kotlin cORoutines Accelerated Graphics'
