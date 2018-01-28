@@ -458,6 +458,18 @@ class AGWebgl : AG(), AGContainer {
 				VarType.Float1 -> {
 					gl.uniform1f(location, (value as Number).toFloat())
 				}
+				VarType.Float2 -> {
+					val fa = value as FloatArray
+					checkErrors { gl.uniform2f(location, fa[0], fa[1]) }
+				}
+				VarType.Float3 -> {
+					val fa = value as FloatArray
+					checkErrors { gl.uniform3f(location, fa[0], fa[1], fa[2]) }
+				}
+				VarType.Float4 -> {
+					val fa = value as FloatArray
+					checkErrors { gl.uniform4f(location, fa[0], fa[1], fa[2], fa[3]) }
+				}
 				else -> invalidOp("Don't know how to set uniform ${uniform.type}")
 			}
 		}

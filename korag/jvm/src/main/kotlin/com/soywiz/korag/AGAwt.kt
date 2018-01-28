@@ -240,6 +240,18 @@ abstract class AGAwtBase : AG() {
 				VarType.Float1 -> {
 					checkErrors { gl.glUniform1f(location, (value as Number).toFloat()) }
 				}
+				VarType.Float2 -> {
+					val fa = value as FloatArray
+					checkErrors { gl.glUniform2f(location, fa[0], fa[1]) }
+				}
+				VarType.Float3 -> {
+					val fa = value as FloatArray
+					checkErrors { gl.glUniform3f(location, fa[0], fa[1], fa[2]) }
+				}
+				VarType.Float4 -> {
+					val fa = value as FloatArray
+					checkErrors { gl.glUniform4f(location, fa[0], fa[1], fa[2], fa[3]) }
+				}
 				else -> invalidOp("Don't know how to set uniform ${uniform.type}")
 			}
 		}
